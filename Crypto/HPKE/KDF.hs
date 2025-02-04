@@ -10,7 +10,6 @@ module Crypto.HPKE.KDF (
     suiteKEM,
     suiteHPKE,
     extractAndExpandKDF,
-    extractAndExpandKEM,
 )
 where
 
@@ -78,13 +77,3 @@ extractAndExpandKDF HKDF_SHA256 = extractAndExpandH SHA256
 extractAndExpandKDF HKDF_SHA384 = extractAndExpandH SHA384
 extractAndExpandKDF HKDF_SHA512 = extractAndExpandH SHA512
 extractAndExpandKDF _ = error "extractAndExpandKDF"
-
-{- FOURMOLU_DISABLE -}
-extractAndExpandKEM :: KEM_ID -> KeyDeriveFunction
-extractAndExpandKEM DHKEM_P256_HKDF_SHA256   = extractAndExpandH SHA256
-extractAndExpandKEM DHKEM_P384_HKDF_SHA384   = extractAndExpandH SHA384
-extractAndExpandKEM DHKEM_P512_HKDF_SHA512   = extractAndExpandH SHA512
-extractAndExpandKEM DHKEM_X25519_HKDF_SHA256 = extractAndExpandH SHA256
-extractAndExpandKEM DHKEM_X448_HKDF_SHA512   = extractAndExpandH SHA512
-extractAndExpandKEM _ = error "extractAndExpandKEM"
-{- FOURMOLU_ENABLE -}

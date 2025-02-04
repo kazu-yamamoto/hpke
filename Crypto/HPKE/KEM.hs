@@ -171,6 +171,16 @@ decapKEM _ _ _ = error "decapKEM"
 
 ----------------------------------------------------------------
 
+{- FOURMOLU_DISABLE -}
+kemTokdf :: KEM_ID -> KDF_ID
+kemTokdf DHKEM_P256_HKDF_SHA256   = HKDF_SHA256
+kemTokdf DHKEM_P384_HKDF_SHA384   = HKDF_SHA384
+kemTokdf DHKEM_P512_HKDF_SHA512   = HKDF_SHA512
+kemTokdf DHKEM_X25519_HKDF_SHA256 = HKDF_SHA256
+kemTokdf DHKEM_X448_HKDF_SHA512   = HKDF_SHA512
+kemTokdf _                        = error "kemTokdf"
+{- FOURMOLU_ENABLE -}
+
 newEnv
     :: forall curve
      . EllipticCurve curve
@@ -180,7 +190,7 @@ newEnv kem_id skR pkR =
         { envSecretKey = skR
         , envPublicKey = pkR
         , envProxy = proxy
-        , envDerive = extractAndExpandKEM kem_id suite
+        , envDerive = extractAndExpandKDF (kemTokdf kem_id) suite
         }
   where
     proxy = Proxy :: Proxy curve
