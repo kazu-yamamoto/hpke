@@ -39,6 +39,7 @@ test-suite spec
     build-tool-depends: hspec-discover:hspec-discover
     hs-source-dirs:     test
     other-modules:      A1Spec
+                        A2Spec
 
     default-language:   Haskell2010
     default-extensions: Strict StrictData
