@@ -83,7 +83,7 @@ data Env curve = Env
     { envSecretKey :: SecretKey curve
     , envPublicKey :: PublicKey curve
     , envProxy :: Proxy curve
-    , envDerive :: KeyDeriveFunction'
+    , envDerive :: KeyDeriveFunction
     }
 
 ----------------------------------------------------------------

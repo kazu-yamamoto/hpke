@@ -52,14 +52,14 @@ fromMode ModeAuthPsk = 0x03
 -- | Context for senders.
 data ContextS = ContextS
     { seqRefS :: IORef Integer
-    , sealS :: SealK
+    , sealS :: Seal
     , nonceBaseS :: Nonce
     }
 
 -- | Context for receivers.
 data ContextR = ContextR
     { seqRefR :: IORef Integer
-    , openR :: OpenK
+    , openR :: Open
     , nonceBaseR :: Nonce
     }
 
@@ -125,7 +125,7 @@ keyScheduleS'
        , KDF h
        )
     => h
-    -> Seal
+    -> (Key -> Seal)
     -> (Int, Int)
     -> Suite
     -> Mode
@@ -180,7 +180,7 @@ keyScheduleR'
        , KDF h
        )
     => h
-    -> Open
+    -> (Key -> Open)
     -> (Int, Int)
     -> Suite
     -> Mode

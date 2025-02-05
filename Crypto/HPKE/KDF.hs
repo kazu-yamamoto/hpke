@@ -82,7 +82,7 @@ labeledExpand_ suite prk label info len = HKDF.expand prk labeled_info len
 
 ----------------------------------------------------------------
 
-extractAndExpandKDF :: KDF_ID -> KeyDeriveFunction
+extractAndExpandKDF :: KDF_ID -> Suite -> KeyDeriveFunction
 extractAndExpandKDF HKDF_SHA256 = extractAndExpandH SHA256
 extractAndExpandKDF HKDF_SHA384 = extractAndExpandH SHA384
 extractAndExpandKDF HKDF_SHA512 = extractAndExpandH SHA512

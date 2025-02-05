@@ -9,14 +9,11 @@ module Crypto.HPKE.Types (
     Suite,
     Label,
     KeyDeriveFunction,
-    KeyDeriveFunction',
     Nonce,
     AssociatedData,
     PlainText,
     CipherText,
-    SealK,
     Seal,
-    OpenK,
     Open,
     EncodedPublicKey (..),
     EncodedSecretKey (..),
@@ -63,8 +60,7 @@ type IKM = ByteString -- Input Keying Material
 type Key = ByteString
 type Suite = ByteString
 type Label = ByteString
-type KeyDeriveFunction = Suite -> SharedSecret -> ByteString -> Key
-type KeyDeriveFunction' = SharedSecret -> ByteString -> Key
+type KeyDeriveFunction = SharedSecret -> ByteString -> Key
 
 ----------------------------------------------------------------
 
@@ -79,10 +75,8 @@ type PlainText = ByteString
 -- | Cipher text (including a authentication tag)
 type CipherText = ByteString
 
-type SealK = Nonce -> AssociatedData -> PlainText -> CipherText
-type Seal = Key -> SealK
-type OpenK = Nonce -> AssociatedData -> CipherText -> Either HpkeError PlainText
-type Open = Key -> OpenK
+type Seal = Nonce -> AssociatedData -> PlainText -> CipherText
+type Open = Nonce -> AssociatedData -> CipherText -> Either HpkeError PlainText
 
 ----------------------------------------------------------------
 

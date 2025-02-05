@@ -50,18 +50,18 @@ instance Show AEAD_ID where
 ----------------------------------------------------------------
 
 class Aead a where
-    sealA :: Proxy a -> Seal
-    openA :: Proxy a -> Open
+    sealA :: Proxy a -> Key -> Seal
+    openA :: Proxy a -> Key -> Open
     nK :: Proxy a -> Int
     nN :: Proxy a -> Int
     nT :: Proxy a -> Int
 
-mkSealA :: AeadEncrypt -> p -> Seal
+mkSealA :: AeadEncrypt -> p -> Key -> Seal
 mkSealA enc _ key nonce aad plain = cipher <> convert tag
   where
     (cipher, AuthTag tag) = enc key nonce aad plain
 
-mkOpenA :: AeadDecrypt -> Int -> p -> Open
+mkOpenA :: AeadDecrypt -> Int -> p -> Key -> Open
 mkOpenA dec len _ key nonce aad cipher
     | tag == convert tag' = Right plain
     | otherwise = Left OpenError
