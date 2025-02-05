@@ -20,6 +20,7 @@ module Crypto.HPKE.KeySchedule (
     open,
 ) where
 
+import qualified Control.Exception as E
 import Control.Monad (when)
 import Data.ByteArray (xor)
 import qualified Data.ByteString as BS
@@ -73,10 +74,12 @@ seal ContextS{..} aad pt = do
     let len = BS.length nonceBaseS
         seqBS = i2ospOf_ len seqI :: ByteString
         nonce = seqBS `xor` nonceBaseS
-        ct = sealS nonce aad pt
+        ect = sealS nonce aad pt
         seqI' = seqI + 1
     writeIORef seqRefS seqI'
-    return ct
+    case ect of
+        Right ct -> return ct
+        Left err -> E.throwIO err
 
 -- | Decryption.
 open
@@ -104,48 +107,29 @@ keyScheduleS
     -> PSK
     -> PSK_ID
     -> IO ContextS
-keyScheduleS kem_id kdf_id aead_id = new seal' ns suite_id
+keyScheduleS kem_id kdf_id aead_id mode ss info psk psk_id = case ex of
+    Left err -> E.throwIO err
+    Right (ks, (seal', nk, nn)) -> do
+        seqref <- newIORef 0
+        let (key, nonce_base, _, _) = ks nk nn mode suite_id ss info psk psk_id
+        return $
+            ContextS
+                { seqRefS = seqref
+                , sealS = seal' key
+                , nonceBaseS = nonce_base
+                }
   where
     suite_id = suiteHPKE kem_id kdf_id aead_id
-    new = case kdf_id of
-        HKDF_SHA256 -> keyScheduleS' SHA256
-        HKDF_SHA384 -> keyScheduleS' SHA256
-        HKDF_SHA512 -> keyScheduleS' SHA512
-        _ -> error "keyScheduleS"
-    seal' = case aead_id of
-        AES_128_GCM -> sealA (Proxy :: Proxy AES128)
-        AES_256_GCM -> sealA (Proxy :: Proxy AES256)
-        ChaCha20Poly1305 -> sealA (Proxy :: Proxy ChaCha20Poly1305)
-        _ -> error "keyScheduleS"
-    ns = case aead_id of
-        AES_128_GCM -> let proxy = Proxy :: Proxy AES128 in (nK proxy, nN proxy)
-        AES_256_GCM -> let proxy = Proxy :: Proxy AES256 in (nK proxy, nN proxy)
-        ChaCha20Poly1305 -> let proxy = Proxy :: Proxy ChaCha20Poly1305 in (nK proxy, nN proxy)
-        _ -> error "keyScheduleS"
-
-keyScheduleS'
-    :: ( HashAlgorithm h
-       , KDF h
-       )
-    => h
-    -> (Key -> Seal)
-    -> (Int, Int)
-    -> Suite
-    -> Mode
-    -> SharedSecret
-    -> Info
-    -> PSK
-    -> PSK_ID
-    -> IO ContextS
-keyScheduleS' h seal' ns suite mode shared_secret info psk psk_id = do
-    seqref <- newIORef 0
-    let (key, nonce_base, _, _) = keySchedule h ns mode suite shared_secret info psk psk_id
-    return $
-        ContextS
-            { seqRefS = seqref
-            , sealS = seal' key
-            , nonceBaseS = nonce_base
-            }
+    eks = case lookupE kdf_id defaultKdfMap of
+        Right (KDFHash h) -> Right $ keySchedule h
+        Left err -> Left err
+    eaead = case lookupE aead_id defaultCipherMap of
+        Right (AeadCipher aead) -> Right (sealA aead, nK aead, nN aead)
+        Left err -> Left err
+    ex = do
+        ks <- eks
+        aead <- eaead
+        return (ks, aead)
 
 ----------------------------------------------------------------
 
@@ -159,48 +143,29 @@ keyScheduleR
     -> PSK
     -> PSK_ID
     -> IO ContextR
-keyScheduleR kem_id kdf_id aead_id = new open' ns suite_id
+keyScheduleR kem_id kdf_id aead_id mode ss info psk psk_id = case ex of
+    Left err -> E.throwIO err
+    Right (ks, (open', nk, nn)) -> do
+        seqref <- newIORef 0
+        let (key, nonce_base, _, _) = ks nk nn mode suite_id ss info psk psk_id
+        return $
+            ContextR
+                { seqRefR = seqref
+                , openR = open' key
+                , nonceBaseR = nonce_base
+                }
   where
     suite_id = suiteHPKE kem_id kdf_id aead_id
-    new = case kdf_id of
-        HKDF_SHA256 -> keyScheduleR' SHA256
-        HKDF_SHA384 -> keyScheduleR' SHA256
-        HKDF_SHA512 -> keyScheduleR' SHA512
-        _ -> error "keyScheduleR"
-    open' = case aead_id of
-        AES_128_GCM -> openA (Proxy :: Proxy AES128)
-        AES_256_GCM -> openA (Proxy :: Proxy AES256)
-        ChaCha20Poly1305 -> openA (Proxy :: Proxy ChaCha20Poly1305)
-        _ -> error "keyScheduleR"
-    ns = case aead_id of
-        AES_128_GCM -> let proxy = Proxy :: Proxy AES128 in (nK proxy, nN proxy)
-        AES_256_GCM -> let proxy = Proxy :: Proxy AES256 in (nK proxy, nN proxy)
-        ChaCha20Poly1305 -> let proxy = Proxy :: Proxy ChaCha20Poly1305 in (nK proxy, nN proxy)
-        _ -> error "keyScheduleR"
-
-keyScheduleR'
-    :: ( HashAlgorithm h
-       , KDF h
-       )
-    => h
-    -> (Key -> Open)
-    -> (Int, Int)
-    -> Suite
-    -> Mode
-    -> SharedSecret
-    -> Info
-    -> PSK
-    -> PSK_ID
-    -> IO ContextR
-keyScheduleR' h open' ns suite mode shared_secret info psk psk_id = do
-    seqref <- newIORef 0
-    let (key, nonce_base, _, _) = keySchedule h ns mode suite shared_secret info psk psk_id
-    return $
-        ContextR
-            { seqRefR = seqref
-            , openR = open' key
-            , nonceBaseR = nonce_base
-            }
+    eks = case lookupE kdf_id defaultKdfMap of
+        Right (KDFHash h) -> Right $ keySchedule h
+        Left err -> Left err
+    eaead = case lookupE aead_id defaultCipherMap of
+        Right (AeadCipher aead) -> Right (openA aead, nK aead, nN aead)
+        Left err -> Left err
+    ex = do
+        ks <- eks
+        aead <- eaead
+        return (ks, aead)
 
 ----------------------------------------------------------------
 
@@ -208,7 +173,8 @@ keySchedule
     :: forall h
      . (HashAlgorithm h, KDF h)
     => h
-    -> (Int, Int)
+    -> Int
+    -> Int
     -> Mode
     -> Suite
     -> SharedSecret
@@ -216,7 +182,7 @@ keySchedule
     -> PSK
     -> PSK_ID
     -> (ByteString, ByteString, Int, ByteString)
-keySchedule h (nk, nn) mode suite shared_secret info psk psk_id =
+keySchedule h nk nn mode suite shared_secret info psk psk_id =
     (key, base_nonce, 0, exporter_secret)
   where
     psk_id_hash = labeledExtract suite "" "psk_id_hash" psk_id :: PRK h

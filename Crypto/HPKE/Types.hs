@@ -20,10 +20,10 @@ module Crypto.HPKE.Types (
     Info,
     PSK,
     PSK_ID,
-    noFail,
     Encap,
     Decap,
     -- rexport
+    CryptoFailable (..),
     SharedSecret (..),
     hashDigestSize,
     i2ospOf_,
@@ -33,10 +33,12 @@ module Crypto.HPKE.Types (
     Word8,
     Word16,
     printf,
+    lookupE,
 ) where
 
+import Control.Exception (Exception)
 import Crypto.ECC (SharedSecret (..))
-import Crypto.Error (CryptoFailable, throwCryptoError)
+import Crypto.Error (CryptoFailable (..))
 import Crypto.Hash.IO (hashDigestSize)
 import Crypto.Number.Serialize (i2ospOf_)
 import Data.ByteArray (convert)
@@ -51,14 +53,18 @@ import Text.Printf (printf)
 ----------------------------------------------------------------
 
 data HpkeError
-    = ValidationError
-    | DeserializeError
-    | EncapError
-    | DecapError
-    | OpenError
-    | MessageLimitReachedError
-    | DeriveKeyPairError
+    = ValidationError String
+    | DeserializeError String
+    | EncapError String
+    | DecapError String
+    | SealError String -- original
+    | OpenError String
+    | MessageLimitReachedError String
+    | DeriveKeyPairError String
+    | Unsupported String -- original
     deriving (Eq, Show)
+
+instance Exception HpkeError
 
 ----------------------------------------------------------------
 
@@ -82,13 +88,8 @@ type PlainText = ByteString
 -- | Cipher text (including a authentication tag)
 type CipherText = ByteString
 
-type Seal = Nonce -> AssociatedData -> PlainText -> CipherText
+type Seal = Nonce -> AssociatedData -> PlainText -> Either HpkeError CipherText
 type Open = Nonce -> AssociatedData -> CipherText -> Either HpkeError PlainText
-
-----------------------------------------------------------------
-
-noFail :: CryptoFailable a -> a
-noFail = throwCryptoError
 
 ----------------------------------------------------------------
 
@@ -117,8 +118,9 @@ showBS16 bs = "\"" <> s16 <> "\""
 
 ----------------------------------------------------------------
 
-type Encap = EncodedPublicKey -> (SharedSecret, EncodedPublicKey)
-type Decap = EncodedPublicKey -> SharedSecret
+type Encap =
+    EncodedPublicKey -> Either HpkeError (SharedSecret, EncodedPublicKey)
+type Decap = EncodedPublicKey -> Either HpkeError SharedSecret
 
 ----------------------------------------------------------------
 
@@ -130,3 +132,10 @@ type PSK = ByteString
 
 -- | ID for pre-shared key.
 type PSK_ID = ByteString
+
+----------------------------------------------------------------
+
+lookupE :: (Eq k, Show k) => k -> [(k, v)] -> Either HpkeError v
+lookupE k table = case lookup k table of
+    Nothing -> Left $ Unsupported $ show k
+    Just v -> Right v

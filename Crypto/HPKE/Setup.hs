@@ -10,6 +10,8 @@ module Crypto.HPKE.Setup (
     setupPSKR,
 ) where
 
+import qualified Control.Exception as E
+
 import Crypto.HPKE.KEM
 import Crypto.HPKE.KeySchedule
 import Crypto.HPKE.Types
@@ -110,10 +112,12 @@ setupBS
     -> IO (EncodedPublicKey, ContextS)
 setupBS mode kem_id kdf_id aead_id pkRm info psk psk_id = do
     encap <- encapGen kem_id
-    let (shared_secret, enc) = encap pkRm
-    ctx <-
-        keyScheduleS kem_id kdf_id aead_id mode shared_secret info psk psk_id
-    return (enc, ctx)
+    case encap pkRm of
+        Left err -> E.throwIO err
+        Right (shared_secret, enc) -> do
+            ctx <-
+                keyScheduleS kem_id kdf_id aead_id mode shared_secret info psk psk_id
+            return (enc, ctx)
 
 setupBS'
     :: Mode
@@ -129,9 +133,11 @@ setupBS'
     -> IO (EncodedPublicKey, ContextS)
 setupBS' mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id = do
     let encap = encapKEM kem_id skEm pkEm
-        (shared_secret, enc) = encap pkRm
-    ctx <- keyScheduleS kem_id kdf_id aead_id mode shared_secret info psk psk_id
-    return (enc, ctx)
+    case encap pkRm of
+        Left err -> E.throwIO err
+        Right (shared_secret, enc) -> do
+            ctx <- keyScheduleS kem_id kdf_id aead_id mode shared_secret info psk psk_id
+            return (enc, ctx)
 
 setupBR
     :: Mode
@@ -146,5 +152,6 @@ setupBR
     -> PSK_ID
     -> IO ContextR
 setupBR mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id = do
-    let shared_secret = decapKEM kem_id skRm pkRm enc
-    keyScheduleR kem_id kdf_id aead_id mode shared_secret info psk psk_id
+    case decapKEM kem_id skRm pkRm enc of
+        Left err -> E.throwIO err
+        Right shared_secret -> keyScheduleR kem_id kdf_id aead_id mode shared_secret info psk psk_id

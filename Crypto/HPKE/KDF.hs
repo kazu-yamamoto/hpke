@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -10,7 +11,9 @@ module Crypto.HPKE.KDF (
     SHA512 (..),
     PRK,
     KDF_ID (HKDF_SHA256, HKDF_SHA384, HKDF_SHA512, ..),
-    extractAndExpandKDF,
+    KDFHash (..),
+    defaultKdfMap,
+    extractAndExpandH,
 )
 where
 
@@ -80,11 +83,14 @@ labeledExpand_ suite prk label info len = HKDF.expand prk labeled_info len
 
 ----------------------------------------------------------------
 
-extractAndExpandKDF :: KDF_ID -> Suite -> KeyDeriveFunction
-extractAndExpandKDF HKDF_SHA256 = extractAndExpandH SHA256
-extractAndExpandKDF HKDF_SHA384 = extractAndExpandH SHA384
-extractAndExpandKDF HKDF_SHA512 = extractAndExpandH SHA512
-extractAndExpandKDF _ = error "extractAndExpandKDF"
+data KDFHash = forall h. (HashAlgorithm h, KDF h) => KDFHash h
+
+defaultKdfMap :: [(KDF_ID, KDFHash)]
+defaultKdfMap =
+    [ (HKDF_SHA256, KDFHash SHA256)
+    , (HKDF_SHA384, KDFHash SHA384)
+    , (HKDF_SHA512, KDFHash SHA512)
+    ]
 
 extractAndExpandH
     :: forall h
