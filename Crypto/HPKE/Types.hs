@@ -21,6 +21,8 @@ module Crypto.HPKE.Types (
     PSK,
     PSK_ID,
     noFail,
+    Encap,
+    Decap,
     -- rexport
     SharedSecret (..),
     hashDigestSize,
@@ -112,6 +114,11 @@ showBS16 :: ByteString -> String
 showBS16 bs = "\"" <> s16 <> "\""
   where
     s16 = C8.unpack $ B16.encode bs
+
+----------------------------------------------------------------
+
+type Encap = EncodedPublicKey -> (SharedSecret, EncodedPublicKey)
+type Decap = EncodedPublicKey -> SharedSecret
 
 ----------------------------------------------------------------
 

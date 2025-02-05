@@ -97,8 +97,7 @@ data Env curve = Env
 encap
     :: (EllipticCurve curve, EllipticCurveDH curve)
     => Env curve
-    -> EncodedPublicKey -- peer
-    -> (SharedSecret, EncodedPublicKey)
+    -> Encap
 encap Env{..} (EncodedPublicKey pkRm) =
     (shared_secret, EncodedPublicKey enc)
   where
@@ -110,7 +109,7 @@ encap Env{..} (EncodedPublicKey pkRm) =
 
 encapGen
     :: KEM_ID
-    -> IO (EncodedPublicKey -> (SharedSecret, EncodedPublicKey))
+    -> IO Encap
 encapGen kem_id@DHKEM_P256_HKDF_SHA256 = do
     let proxy = Proxy :: Proxy Curve_P256R1
     env <- genEnv proxy kem_id
@@ -137,7 +136,7 @@ encapKEM
     :: KEM_ID
     -> EncodedSecretKey
     -> EncodedPublicKey
-    -> (EncodedPublicKey -> (SharedSecret, EncodedPublicKey))
+    -> Encap
 encapKEM kem_id@DHKEM_P256_HKDF_SHA256 skRm pkRm = encap env
   where
     env = newEnvP kem_id skRm pkRm :: Env Curve_P256R1
@@ -172,8 +171,7 @@ encapKEM _ _ _ = error "encapKEM"
 decap
     :: (EllipticCurve curve, EllipticCurveDH curve)
     => Env curve
-    -> EncodedPublicKey -- peer
-    -> SharedSecret
+    -> Decap
 decap Env{..} (EncodedPublicKey enc) = shared_secret
   where
     pkE = noFail $ decodePoint envProxy enc
@@ -186,7 +184,7 @@ decapKEM
     :: KEM_ID
     -> EncodedSecretKey
     -> EncodedPublicKey
-    -> (EncodedPublicKey -> SharedSecret)
+    -> Decap
 decapKEM kem_id@DHKEM_P256_HKDF_SHA256 skRm pkRm = decap env
   where
     env = newEnvP kem_id skRm pkRm :: Env Curve_P256R1

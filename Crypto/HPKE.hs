@@ -29,6 +29,9 @@ module Crypto.HPKE (
     AssociatedData,
     PlainText,
     CipherText,
+
+    -- * Error
+    HpkeError (..),
 ) where
 
 import Crypto.HPKE.KeySchedule
