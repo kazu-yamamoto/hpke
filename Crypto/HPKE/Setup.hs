@@ -110,22 +110,14 @@ setupBS
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
 setupBS mode kem_id kdf_id aead_id pkRm info psk psk_id =
-    case look kem_id kdf_id aead_id of
-        Left err -> E.throwIO err
-        Right ((KEMGroup group, KDFHash h), KDFHash h', AeadCipher c) -> do
-            let suite = suiteKEM kem_id
-                derive = extractAndExpandH h suite
-            encap <- encapGen group derive
-            case encap pkRm of
-                Left err -> E.throwIO err
-                Right (shared_secret, enc) -> do
-                    let seal' = sealA c
-                        nk = nK c
-                        nn = nN c
-                        suite' = suiteHPKE kem_id kdf_id aead_id
-                    let quad = keySchedule h' nk nn mode suite' shared_secret info psk psk_id
-                    ctx <- newContextS quad seal'
-                    return (enc, ctx)
+    withLookup mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
+        encap <- encapGen group derive
+        case encap pkRm of
+            Left err -> E.throwIO err
+            Right (shared_secret, enc) -> do
+                let quad = schedule shared_secret
+                ctx <- newContextS quad seal'
+                return (enc, ctx)
 
 setupBS'
     :: Mode
@@ -140,33 +132,14 @@ setupBS'
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
 setupBS' mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id =
-    case look kem_id kdf_id aead_id of
-        Left err -> E.throwIO err
-        Right ((KEMGroup group, KDFHash h), KDFHash h', AeadCipher c) -> do
-            let suite = suiteKEM kem_id
-                derive = extractAndExpandH h suite
-                encap = encapKEM group derive skEm pkEm
-            case encap pkRm of
-                Left err -> E.throwIO err
-                Right (shared_secret, enc) -> do
-                    let seal' = sealA c
-                        nk = nK c
-                        nn = nN c
-                        suite' = suiteHPKE kem_id kdf_id aead_id
-                    let quad = keySchedule h' nk nn mode suite' shared_secret info psk psk_id
-                    ctx <- newContextS quad seal'
-                    return (enc, ctx)
-
-look
-    :: KEM_ID
-    -> KDF_ID
-    -> AEAD_ID
-    -> Either HpkeError ((KEMGroup, KDFHash), KDFHash, AeadCipher)
-look kem_id kdf_id aead_id = do
-    k <- lookupE kem_id defaultKemMap
-    h <- lookupE kdf_id defaultKdfMap
-    a <- lookupE aead_id defaultCipherMap
-    return (k, h, a)
+    withLookup mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
+        let encap = encapKEM group derive skEm pkEm
+        case encap pkRm of
+            Left err -> E.throwIO err
+            Right (shared_secret, enc) -> do
+                let quad = schedule shared_secret
+                ctx <- newContextS quad seal'
+                return (enc, ctx)
 
 setupBR
     :: Mode
@@ -180,22 +153,57 @@ setupBR
     -> PSK
     -> PSK_ID
     -> IO ContextR
-setupBR mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id = do
+setupBR mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id =
+    withLookup mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule _ open' -> do
+        let decap = decapKEM group derive skRm pkRm
+        case decap enc of
+            Left err -> E.throwIO err
+            Right shared_secret -> do
+                let quad = schedule shared_secret
+                newContextR quad open'
+
+----------------------------------------------------------------
+
+look
+    :: KEM_ID
+    -> KDF_ID
+    -> AEAD_ID
+    -> Either HpkeError ((KEMGroup, KDFHash), KDFHash, AeadCipher)
+look kem_id kdf_id aead_id = do
+    k <- lookupE kem_id defaultKemMap
+    h <- lookupE kdf_id defaultKdfMap
+    a <- lookupE aead_id defaultCipherMap
+    return (k, h, a)
+
+withLookup
+    :: Mode
+    -> KEM_ID
+    -> KDF_ID
+    -> AEAD_ID
+    -> Info
+    -> PSK
+    -> PSK_ID
+    -> ( KEMGroup
+         -> KeyDeriveFunction
+         -> (SharedSecret -> (ByteString, ByteString, Int, ByteString))
+         -> (Key -> Seal)
+         -> (Key -> Open)
+         -> IO a
+       )
+    -> IO a
+withLookup mode kem_id kdf_id aead_id info psk psk_id body =
     case look kem_id kdf_id aead_id of
         Left err -> E.throwIO err
-        Right ((KEMGroup group, KDFHash h), KDFHash h', AeadCipher c) -> do
+        Right ((group, KDFHash h), KDFHash h', AeadCipher c) -> do
             let suite = suiteKEM kem_id
                 derive = extractAndExpandH h suite
-                decap = decapKEM group derive skRm pkRm
-            case decap enc of
-                Left err -> E.throwIO err
-                Right shared_secret -> do
-                    let open' = openA c
-                        nk = nK c
-                        nn = nN c
-                        suite' = suiteHPKE kem_id kdf_id aead_id
-                    let quad = keySchedule h' nk nn mode suite' shared_secret info psk psk_id
-                    newContextR quad open'
+                nk = nK c
+                nn = nN c
+                seal' = sealA c
+                open' = openA c
+                suite' = suiteHPKE kem_id kdf_id aead_id
+                schedule = keySchedule h' suite' nk nn mode info psk psk_id
+            body group derive schedule seal' open'
 
 ----------------------------------------------------------------
 

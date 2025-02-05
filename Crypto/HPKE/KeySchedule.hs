@@ -129,16 +129,16 @@ keySchedule
     :: forall h
      . (HashAlgorithm h, KDF h)
     => h
+    -> Suite
     -> Int
     -> Int
     -> Mode
-    -> Suite
-    -> SharedSecret
     -> Info
     -> PSK
     -> PSK_ID
+    -> SharedSecret
     -> (ByteString, ByteString, Int, ByteString)
-keySchedule h nk nn mode suite shared_secret info psk psk_id =
+keySchedule h suite nk nn mode info psk psk_id shared_secret =
     (key, base_nonce, 0, exporter_secret)
   where
     psk_id_hash = labeledExtract suite "" "psk_id_hash" psk_id :: PRK h
