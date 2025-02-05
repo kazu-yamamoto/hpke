@@ -5,19 +5,19 @@
 module Crypto.HPKE.KeySchedule (
     -- * Types
     Mode (..),
-    KEM_ID (..),
-    KDF_ID (..),
-    AEAD_ID (..),
 
     -- * Sender
     ContextS,
-    keyScheduleS,
+    newContextS,
     seal,
 
     -- * Receiver
     ContextR,
-    keyScheduleR,
+    newContextR,
     open,
+
+    -- * Key schedule
+    keySchedule,
 ) where
 
 import qualified Control.Exception as E
@@ -25,9 +25,7 @@ import Data.ByteArray (xor)
 import qualified Data.ByteString as BS
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 
-import Crypto.HPKE.AEAD
 import Crypto.HPKE.KDF
-import Crypto.HPKE.KEM
 import Crypto.HPKE.Types
 
 ----------------------------------------------------------------
@@ -97,75 +95,33 @@ open ContextR{..} aad ct = do
 
 ----------------------------------------------------------------
 
-keyScheduleS
-    :: KEM_ID
-    -> KDF_ID
-    -> AEAD_ID
-    -> Mode
-    -> SharedSecret
-    -> Info
-    -> PSK
-    -> PSK_ID
+newContextS
+    :: (ByteString, ByteString, Int, ByteString)
+    -> (Key -> Seal)
     -> IO ContextS
-keyScheduleS kem_id kdf_id aead_id mode ss info psk psk_id = case ex of
-    Left err -> E.throwIO err
-    Right (ks, (seal', nk, nn)) -> do
-        seqref <- newIORef 0
-        let (key, nonce_base, _, _) = ks nk nn mode suite_id ss info psk psk_id
-        return $
-            ContextS
-                { seqRefS = seqref
-                , sealS = seal' key
-                , nonceBaseS = nonce_base
-                }
-  where
-    suite_id = suiteHPKE kem_id kdf_id aead_id
-    eks = case lookupE kdf_id defaultKdfMap of
-        Right (KDFHash h) -> Right $ keySchedule h
-        Left err -> Left err
-    eaead = case lookupE aead_id defaultCipherMap of
-        Right (AeadCipher aead) -> Right (sealA aead, nK aead, nN aead)
-        Left err -> Left err
-    ex = do
-        ks <- eks
-        aead <- eaead
-        return (ks, aead)
+newContextS (key, nonce_base, _, _) seal' = do
+    seqref <- newIORef 0
+    return $
+        ContextS
+            { seqRefS = seqref
+            , sealS = seal' key
+            , nonceBaseS = nonce_base
+            }
 
 ----------------------------------------------------------------
 
-keyScheduleR
-    :: KEM_ID
-    -> KDF_ID
-    -> AEAD_ID
-    -> Mode
-    -> SharedSecret
-    -> Info
-    -> PSK
-    -> PSK_ID
+newContextR
+    :: (ByteString, ByteString, Int, ByteString)
+    -> (Key -> Open)
     -> IO ContextR
-keyScheduleR kem_id kdf_id aead_id mode ss info psk psk_id = case ex of
-    Left err -> E.throwIO err
-    Right (ks, (open', nk, nn)) -> do
-        seqref <- newIORef 0
-        let (key, nonce_base, _, _) = ks nk nn mode suite_id ss info psk psk_id
-        return $
-            ContextR
-                { seqRefR = seqref
-                , openR = open' key
-                , nonceBaseR = nonce_base
-                }
-  where
-    suite_id = suiteHPKE kem_id kdf_id aead_id
-    eks = case lookupE kdf_id defaultKdfMap of
-        Right (KDFHash h) -> Right $ keySchedule h
-        Left err -> Left err
-    eaead = case lookupE aead_id defaultCipherMap of
-        Right (AeadCipher aead) -> Right (openA aead, nK aead, nN aead)
-        Left err -> Left err
-    ex = do
-        ks <- eks
-        aead <- eaead
-        return (ks, aead)
+newContextR (key, nonce_base, _, _) open' = do
+    seqref <- newIORef 0
+    return $
+        ContextR
+            { seqRefR = seqref
+            , openR = open' key
+            , nonceBaseR = nonce_base
+            }
 
 ----------------------------------------------------------------
 
@@ -197,12 +153,3 @@ keySchedule h nk nn mode suite shared_secret info psk psk_id =
     base_nonce = labeledExpand suite secret "base_nonce" key_schedule_context nn
 
     exporter_secret = labeledExpand suite secret "exp" key_schedule_context $ hashDigestSize h
-
-----------------------------------------------------------------
-
-suiteHPKE :: KEM_ID -> KDF_ID -> AEAD_ID -> Suite
-suiteHPKE kem_id hkdf_id aead_id = "HPKE" <> i0 <> i1 <> i2
-  where
-    i0 = i2ospOf_ 2 $ fromIntegral $ fromKEM_ID kem_id
-    i1 = i2ospOf_ 2 $ fromIntegral $ fromKDF_ID hkdf_id
-    i2 = i2ospOf_ 2 $ fromIntegral $ fromAEAD_ID aead_id

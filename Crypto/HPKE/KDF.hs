@@ -1,6 +1,4 @@
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Crypto.HPKE.KDF (
@@ -10,9 +8,6 @@ module Crypto.HPKE.KDF (
     SHA384 (..),
     SHA512 (..),
     PRK,
-    KDF_ID (HKDF_SHA256, HKDF_SHA384, HKDF_SHA512, ..),
-    KDFHash (..),
-    defaultKdfMap,
     extractAndExpandH,
 )
 where
@@ -27,26 +22,6 @@ import Crypto.KDF.HKDF (PRK)
 import qualified Crypto.KDF.HKDF as HKDF
 
 import Crypto.HPKE.Types
-
-----------------------------------------------------------------
-
--- | ID for key derivation function.
-newtype KDF_ID = KDF_ID {fromKDF_ID :: Word16} deriving (Eq)
-
-{- FOURMOLU_DISABLE -}
-pattern HKDF_SHA256 :: KDF_ID
-pattern HKDF_SHA256  = KDF_ID 0x0001
-pattern HKDF_SHA384 :: KDF_ID
-pattern HKDF_SHA384  = KDF_ID 0x0002
-pattern HKDF_SHA512 :: KDF_ID
-pattern HKDF_SHA512  = KDF_ID 0x0003
-
-instance Show KDF_ID where
-    show HKDF_SHA256 = "HKDF_SHA256"
-    show HKDF_SHA384 = "HKDF_SHA384"
-    show HKDF_SHA512 = "HKDF_SHA512"
-    show (KDF_ID n)  = "HKDF_ID 0x" ++ printf "%04x" n
-{- FOURMOLU_ENABLE -}
 
 ----------------------------------------------------------------
 
@@ -83,19 +58,10 @@ labeledExpand_ suite prk label info len = HKDF.expand prk labeled_info len
 
 ----------------------------------------------------------------
 
-data KDFHash = forall h. (HashAlgorithm h, KDF h) => KDFHash h
-
-defaultKdfMap :: [(KDF_ID, KDFHash)]
-defaultKdfMap =
-    [ (HKDF_SHA256, KDFHash SHA256)
-    , (HKDF_SHA384, KDFHash SHA384)
-    , (HKDF_SHA512, KDFHash SHA512)
-    ]
-
 extractAndExpandH
     :: forall h
      . (HashAlgorithm h, KDF h)
-    => h -> Suite -> SharedSecret -> ByteString -> Key
+    => h -> Suite -> KeyDeriveFunction
 extractAndExpandH h suite dh kem_context = shared_secret
   where
     eae_prk :: PRK h

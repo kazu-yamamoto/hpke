@@ -1,17 +1,12 @@
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module Crypto.HPKE.AEAD (
-    AEAD_ID (AES_128_GCM, AES_256_GCM, ChaCha20Poly1305, ..),
     Aead (..),
-    AeadCipher (..),
-    defaultCipherMap,
 ) where
 
 import Crypto.Cipher.AES (AES128, AES256)
-import Crypto.Cipher.ChaChaPoly1305 (ChaCha20Poly1305)
 import qualified Crypto.Cipher.ChaChaPoly1305 as CCP
 import Crypto.Cipher.Types (AEAD (..), AuthTag (..), BlockCipher)
 import qualified Crypto.Cipher.Types as Cipher
@@ -24,44 +19,6 @@ import Crypto.HPKE.Types
 -- $setup
 -- >>> :set -XOverloadedStrings
 -- >>> import Data.ByteString
-
-----------------------------------------------------------------
-
--- | ID for authenticated encryption with additional data
-newtype AEAD_ID = AEAD_ID {fromAEAD_ID :: Word16} deriving (Eq)
-
-{- FOURMOLU_DISABLE -}
-pattern AES_128_GCM      :: AEAD_ID
-pattern AES_128_GCM       = AEAD_ID 0x0001
-pattern AES_256_GCM      :: AEAD_ID
-pattern AES_256_GCM       = AEAD_ID 0x0002
-pattern ChaCha20Poly1305 :: AEAD_ID
-pattern ChaCha20Poly1305  = AEAD_ID 0x0003
-
-instance Show AEAD_ID where
-    show AES_128_GCM      = "AES_128_GCM"
-    show AES_256_GCM      = "AES_256_GCM"
-    show ChaCha20Poly1305 = "ChaCha20Poly1305"
-    show (AEAD_ID n)      = "AEAD_ID 0x" ++ printf "%04x" n
-{- FOURMOLU_ENABLE -}
-
-{- FOURMOLU_DISABLE -}
-aes128 :: Proxy AES128
-aes128  = Proxy :: Proxy AES128
-aes256 :: Proxy AES256
-aes256  = Proxy :: Proxy AES256
-chacha :: Proxy ChaCha20Poly1305
-chacha  = Proxy :: Proxy ChaCha20Poly1305
-{- FOURMOLU_ENABLE -}
-
-data AeadCipher = forall a. Aead a => AeadCipher (Proxy a)
-
-defaultCipherMap :: [(AEAD_ID, AeadCipher)]
-defaultCipherMap =
-    [ (AES_128_GCM, AeadCipher aes128)
-    , (AES_256_GCM, AeadCipher aes256)
-    , (ChaCha20Poly1305, AeadCipher chacha)
-    ]
 
 ----------------------------------------------------------------
 
@@ -194,7 +151,7 @@ aes256tagLength = 16
 -- >>> let nonce = "\x72\x6b\x43\x90\xed\x22\x09\x80\x9f\x58\xc6\x93" :: ByteString
 -- >>> let aad = "\x43\x6f\x75\x6e\x74\x2d\x30" :: ByteString
 -- >>> let plain = "The quick brown fox jumps over the very lazy dog." :: ByteString
--- >>> let proxy = Proxy :: Proxy ChaCha20Poly1305
+-- >>> let proxy = Proxy :: Proxy CCP.ChaCha20Poly1305
 -- >>> sealA proxy key nonce aad plain >>= openA proxy key nonce aad
 -- Right "The quick brown fox jumps over the very lazy dog."
 instance Aead CCP.ChaCha20Poly1305 where
