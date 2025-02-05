@@ -68,7 +68,7 @@ data ContextR = ContextR
 ----------------------------------------------------------------
 
 -- | Encryption.
-seal :: ContextS -> AssociatedData -> PlainText -> IO CipherText
+seal :: ContextS -> AAD -> PlainText -> IO CipherText
 seal ContextS{..} aad pt = do
     seqI <- readIORef seqRefS
     let len = BS.length nonceBaseS
@@ -83,7 +83,7 @@ seal ContextS{..} aad pt = do
 
 -- | Decryption.
 open
-    :: ContextR -> AssociatedData -> CipherText -> IO (Either HpkeError PlainText)
+    :: ContextR -> AAD -> CipherText -> IO (Either HpkeError PlainText)
 open ContextR{..} aad ct = do
     seqI <- readIORef seqRefR
     let len = BS.length nonceBaseR

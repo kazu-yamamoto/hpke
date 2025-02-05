@@ -23,7 +23,7 @@ module Crypto.HPKE (
     -- * Encryption and Decyption
     seal,
     open,
-    AssociatedData,
+    AAD,
     PlainText,
     CipherText,
 

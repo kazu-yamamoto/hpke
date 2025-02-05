@@ -10,7 +10,7 @@ module Crypto.HPKE.Types (
     Label,
     KeyDeriveFunction,
     Nonce,
-    AssociatedData,
+    AAD,
     PlainText,
     CipherText,
     Seal,
@@ -79,8 +79,8 @@ type KeyDeriveFunction = SharedSecret -> ByteString -> Key
 
 type Nonce = ByteString
 
--- | Associated data for AEAD.
-type AssociatedData = ByteString
+-- | Additional authenticated data for AEAD.
+type AAD = ByteString
 
 -- | Plain text.
 type PlainText = ByteString
@@ -88,8 +88,8 @@ type PlainText = ByteString
 -- | Cipher text (including a authentication tag)
 type CipherText = ByteString
 
-type Seal = Nonce -> AssociatedData -> PlainText -> Either HpkeError CipherText
-type Open = Nonce -> AssociatedData -> CipherText -> Either HpkeError PlainText
+type Seal = Nonce -> AAD -> PlainText -> Either HpkeError CipherText
+type Open = Nonce -> AAD -> CipherText -> Either HpkeError PlainText
 
 ----------------------------------------------------------------
 
