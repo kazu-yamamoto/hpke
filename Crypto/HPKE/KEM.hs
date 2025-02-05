@@ -5,8 +5,8 @@
 
 module Crypto.HPKE.KEM (
     encapGen,
-    encapKEM,
-    decapKEM,
+    encapEnv,
+    decapEnv,
     DeserialSK (..),
 )
 where
@@ -73,14 +73,14 @@ encapGen proxy derive = do
     env <- genEnv proxy derive
     return $ encap env
 
-encapKEM
+encapEnv
     :: (EllipticCurve curve, EllipticCurveDH curve, DeserialSK curve)
     => Proxy curve
     -> KeyDeriveFunction
     -> EncodedSecretKey
     -> EncodedPublicKey
     -> Encap
-encapKEM proxy derive skRm pkRm enc = do
+encapEnv proxy derive skRm pkRm enc = do
     env <- newEnvP proxy derive skRm pkRm
     encap env enc
 
@@ -98,14 +98,14 @@ decap Env{..} enc@(EncodedPublicKey pkEm) = do
         shared_secret = SharedSecret $ convert $ envDerive dh kem_context
     return shared_secret
 
-decapKEM
+decapEnv
     :: (EllipticCurve curve, EllipticCurveDH curve, DeserialSK curve)
     => Proxy curve
     -> KeyDeriveFunction
     -> EncodedSecretKey
     -> EncodedPublicKey
     -> Decap
-decapKEM proxy derive skRm pkRm enc = do
+decapEnv proxy derive skRm pkRm enc = do
     env <- newEnvP proxy derive skRm pkRm
     decap env enc
 

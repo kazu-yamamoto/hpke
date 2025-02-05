@@ -8,7 +8,7 @@ module Crypto.HPKE.KDF (
     SHA384 (..),
     SHA512 (..),
     PRK,
-    extractAndExpandH,
+    extractAndExpand,
 )
 where
 
@@ -58,11 +58,11 @@ labeledExpand_ suite prk label info len = HKDF.expand prk labeled_info len
 
 ----------------------------------------------------------------
 
-extractAndExpandH
+extractAndExpand
     :: forall h
      . (HashAlgorithm h, KDF h)
     => h -> Suite -> KeyDeriveFunction
-extractAndExpandH h suite dh kem_context = shared_secret
+extractAndExpand h suite dh kem_context = shared_secret
   where
     eae_prk :: PRK h
     eae_prk = labeledExtract suite "" "eae_prk" $ convert dh

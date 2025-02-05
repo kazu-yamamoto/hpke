@@ -133,7 +133,7 @@ setupBS'
     -> IO (EncodedPublicKey, ContextS)
 setupBS' mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id =
     withLookup mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
-        let encap = encapKEM group derive skEm pkEm
+        let encap = encapEnv group derive skEm pkEm
         case encap pkRm of
             Left err -> E.throwIO err
             Right (shared_secret, enc) -> do
@@ -155,7 +155,7 @@ setupBR
     -> IO ContextR
 setupBR mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id =
     withLookup mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule _ open' -> do
-        let decap = decapKEM group derive skRm pkRm
+        let decap = decapEnv group derive skRm pkRm
         case decap enc of
             Left err -> E.throwIO err
             Right shared_secret -> do
@@ -196,7 +196,7 @@ withLookup mode kem_id kdf_id aead_id info psk psk_id body =
         Left err -> E.throwIO err
         Right ((group, KDFHash h), KDFHash h', AeadCipher c) -> do
             let suite = suiteKEM kem_id
-                derive = extractAndExpandH h suite
+                derive = extractAndExpand h suite
                 nk = nK c
                 nn = nN c
                 seal' = sealA c
