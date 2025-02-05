@@ -19,8 +19,6 @@ module Crypto.HPKE.Types (
     Seal,
     OpenK,
     Open,
-    AeadEncrypt,
-    AeadDecrypt,
     PublicKey,
     SecretKey,
     EncodedPublicKey (..),
@@ -30,13 +28,6 @@ module Crypto.HPKE.Types (
     PSK_ID,
     noFail,
     -- rexport
-    HashAlgorithm,
-    AES128,
-    AES256,
-    ChaCha20Poly1305,
-    SHA256 (..),
-    SHA384 (..),
-    SHA512 (..),
     SharedSecret (..),
     hashDigestSize,
     i2ospOf_,
@@ -45,21 +36,12 @@ module Crypto.HPKE.Types (
     ByteString,
 ) where
 
-import Crypto.Cipher.AES (AES128, AES256)
-import Crypto.Cipher.ChaChaPoly1305 (ChaCha20Poly1305)
-import Crypto.Cipher.Types (AuthTag)
 import Crypto.ECC (Point, Scalar, SharedSecret (..))
 import Crypto.Error
-import Crypto.Hash.Algorithms (
-    HashAlgorithm,
-    SHA256 (..),
-    SHA384 (..),
-    SHA512 (..),
- )
 import Crypto.Hash.IO (hashDigestSize)
 import Crypto.Number.Serialize (i2ospOf_)
 import qualified Crypto.PubKey.Curve25519 as X25519
-import Data.ByteArray (ByteArray, ByteArrayAccess, convert)
+import Data.ByteArray (convert)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Char8 as C8
@@ -105,26 +87,6 @@ type SealK = Nonce -> AssociatedData -> PlainText -> CipherText
 type Seal = Key -> SealK
 type OpenK = Nonce -> AssociatedData -> CipherText -> Either HpkeError PlainText
 type Open = Key -> OpenK
-
-----------------------------------------------------------------
-
-type AeadEncrypt =
-    forall k n a t
-     . ( ByteArray k
-       , ByteArrayAccess n
-       , ByteArrayAccess a
-       , ByteArray t
-       )
-    => k -> n -> a -> t -> (t, AuthTag)
-
-type AeadDecrypt =
-    forall k n a t
-     . ( ByteArray k
-       , ByteArrayAccess n
-       , ByteArrayAccess a
-       , ByteArray t
-       )
-    => k -> n -> a -> t -> (t, AuthTag)
 
 ----------------------------------------------------------------
 

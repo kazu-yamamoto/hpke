@@ -1,23 +1,53 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Crypto.HPKE.KDF (
     KDF (..),
-    SHA256,
-    SHA384,
-    SHA512,
+    HashAlgorithm,
+    SHA256 (..),
+    SHA384 (..),
+    SHA512 (..),
     PRK,
-    suiteKEM,
-    suiteHPKE,
+    KDF_ID (HKDF_SHA256, HKDF_SHA384, HKDF_SHA512, ..),
     extractAndExpandKDF,
 )
 where
 
+import Crypto.Hash.Algorithms (
+    HashAlgorithm,
+    SHA256 (..),
+    SHA384 (..),
+    SHA512 (..),
+ )
 import Crypto.KDF.HKDF (PRK)
 import qualified Crypto.KDF.HKDF as HKDF
+import Data.Word
+import Text.Printf
 
-import Crypto.HPKE.ID
 import Crypto.HPKE.Types
+
+----------------------------------------------------------------
+
+-- | ID for key derivation function.
+newtype KDF_ID = KDF_ID {fromKDF_ID :: Word16} deriving (Eq)
+
+{- FOURMOLU_DISABLE -}
+pattern HKDF_SHA256 :: KDF_ID
+pattern HKDF_SHA256  = KDF_ID 0x0001
+pattern HKDF_SHA384 :: KDF_ID
+pattern HKDF_SHA384  = KDF_ID 0x0002
+pattern HKDF_SHA512 :: KDF_ID
+pattern HKDF_SHA512  = KDF_ID 0x0003
+
+instance Show KDF_ID where
+    show HKDF_SHA256 = "HKDF_SHA256"
+    show HKDF_SHA384 = "HKDF_SHA384"
+    show HKDF_SHA512 = "HKDF_SHA512"
+    show (KDF_ID n)  = "HKDF_ID 0x" ++ printf "%04x" n
+{- FOURMOLU_ENABLE -}
+
+----------------------------------------------------------------
 
 class KDF h where
     labeledExtract :: Suite -> Salt -> Label -> IKM -> PRK h
@@ -35,17 +65,7 @@ instance KDF SHA512 where
     labeledExtract = labeledExtract_
     labeledExpand = labeledExpand_
 
-suiteKEM :: KEM_ID -> Suite
-suiteKEM kem_id = "KEM" <> i
-  where
-    i = i2ospOf_ 2 $ fromIntegral $ fromKEM_ID kem_id
-
-suiteHPKE :: KEM_ID -> KDF_ID -> AEAD_ID -> Suite
-suiteHPKE kem_id hkdf_id aead_id = "HPKE" <> i0 <> i1 <> i2
-  where
-    i0 = i2ospOf_ 2 $ fromIntegral $ fromKEM_ID kem_id
-    i1 = i2ospOf_ 2 $ fromIntegral $ fromKDF_ID hkdf_id
-    i2 = i2ospOf_ 2 $ fromIntegral $ fromAEAD_ID aead_id
+----------------------------------------------------------------
 
 labeledExtract_
     :: HashAlgorithm a => Suite -> Salt -> Label -> IKM -> PRK a
@@ -60,6 +80,14 @@ labeledExpand_ suite prk label info len = HKDF.expand prk labeled_info len
     labeled_info =
         i2ospOf_ 2 (fromIntegral len) <> "HPKE-v1" <> suite <> label <> info
 
+----------------------------------------------------------------
+
+extractAndExpandKDF :: KDF_ID -> KeyDeriveFunction
+extractAndExpandKDF HKDF_SHA256 = extractAndExpandH SHA256
+extractAndExpandKDF HKDF_SHA384 = extractAndExpandH SHA384
+extractAndExpandKDF HKDF_SHA512 = extractAndExpandH SHA512
+extractAndExpandKDF _ = error "extractAndExpandKDF"
+
 extractAndExpandH
     :: forall h
      . (HashAlgorithm h, KDF h)
@@ -71,9 +99,3 @@ extractAndExpandH h suite dh kem_context = shared_secret
     siz = hashDigestSize h
     shared_secret =
         labeledExpand suite eae_prk "shared_secret" kem_context siz
-
-extractAndExpandKDF :: KDF_ID -> KeyDeriveFunction
-extractAndExpandKDF HKDF_SHA256 = extractAndExpandH SHA256
-extractAndExpandKDF HKDF_SHA384 = extractAndExpandH SHA384
-extractAndExpandKDF HKDF_SHA512 = extractAndExpandH SHA512
-extractAndExpandKDF _ = error "extractAndExpandKDF"

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Crypto.HPKE.Setup (
     setupBaseS,
@@ -9,7 +10,6 @@ module Crypto.HPKE.Setup (
     setupPSKR,
 ) where
 
-import Crypto.HPKE.ID
 import Crypto.HPKE.KEM
 import Crypto.HPKE.KeySchedule
 import Crypto.HPKE.Types

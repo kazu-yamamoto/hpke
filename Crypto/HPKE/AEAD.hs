@@ -1,20 +1,51 @@
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Crypto.HPKE.AEAD where
+module Crypto.HPKE.AEAD (
+    AEAD_ID (AES_128_GCM, AES_256_GCM, ChaCha20Poly1305, ..),
+    Aead (..),
+    AES128,
+    AES256,
+    ChaCha20Poly1305,
+) where
 
+import Crypto.Cipher.AES (AES128, AES256)
+import Crypto.Cipher.ChaChaPoly1305 (ChaCha20Poly1305)
 import qualified Crypto.Cipher.ChaChaPoly1305 as CCP
 import Crypto.Cipher.Types (AEAD (..), AuthTag (..))
 import qualified Crypto.Cipher.Types as Cipher
 import Data.ByteArray (ByteArray, ByteArrayAccess)
 import qualified Data.ByteString as BS
 import Data.Tuple (swap)
+import Data.Word
+import Text.Printf
 
 import Crypto.HPKE.Types
 
 -- $setup
 -- >>> :set -XOverloadedStrings
 -- >>> import Data.ByteString
+
+----------------------------------------------------------------
+
+-- | ID for authenticated encryption with additional data
+newtype AEAD_ID = AEAD_ID {fromAEAD_ID :: Word16} deriving (Eq)
+
+{- FOURMOLU_DISABLE -}
+pattern AES_128_GCM      :: AEAD_ID
+pattern AES_128_GCM       = AEAD_ID 0x0001
+pattern AES_256_GCM      :: AEAD_ID
+pattern AES_256_GCM       = AEAD_ID 0x0002
+pattern ChaCha20Poly1305 :: AEAD_ID
+pattern ChaCha20Poly1305  = AEAD_ID 0x0003
+
+instance Show AEAD_ID where
+    show AES_128_GCM      = "AES_128_GCM"
+    show AES_256_GCM      = "AES_256_GCM"
+    show ChaCha20Poly1305 = "ChaCha20Poly1305"
+    show (AEAD_ID n)      = "AEAD_ID 0x" ++ printf "%04x" n
+{- FOURMOLU_ENABLE -}
 
 ----------------------------------------------------------------
 
@@ -38,6 +69,26 @@ mkOpenA dec len _ key nonce aad cipher
     brkpt = BS.length cipher - len
     (cipher', tag') = BS.splitAt brkpt cipher
     (plain, AuthTag tag) = dec key nonce aad cipher'
+
+----------------------------------------------------------------
+
+type AeadEncrypt =
+    forall k n a t
+     . ( ByteArray k
+       , ByteArrayAccess n
+       , ByteArrayAccess a
+       , ByteArray t
+       )
+    => k -> n -> a -> t -> (t, AuthTag)
+
+type AeadDecrypt =
+    forall k n a t
+     . ( ByteArray k
+       , ByteArrayAccess n
+       , ByteArrayAccess a
+       , ByteArray t
+       )
+    => k -> n -> a -> t -> (t, AuthTag)
 
 ----------------------------------------------------------------
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -6,6 +7,14 @@ module Crypto.HPKE.KEM (
     encapGen,
     encapKEM,
     decapKEM,
+    KEM_ID (
+        DHKEM_P256_HKDF_SHA256,
+        DHKEM_P384_HKDF_SHA384,
+        DHKEM_P512_HKDF_SHA512,
+        DHKEM_X25519_HKDF_SHA256,
+        DHKEM_X448_HKDF_SHA512,
+        ..
+    ),
 )
 where
 
@@ -25,8 +34,9 @@ import Crypto.ECC (
 import qualified Crypto.PubKey.Curve25519 as X25519
 import qualified Crypto.PubKey.Curve448 as X448
 import Crypto.Random (drgNew, withDRG)
+import Data.Word (Word16)
+import Text.Printf
 
-import Crypto.HPKE.ID
 import Crypto.HPKE.KDF
 import Crypto.HPKE.Types
 
@@ -35,6 +45,32 @@ import Crypto.HPKE.Types
 -- >>> import Crypto.ECC
 -- >>> import Crypto.Hash.Algorithms
 -- >>> import Data.ByteString
+
+----------------------------------------------------------------
+
+-- | ID for key encapsulation mechanism.
+newtype KEM_ID = KEM_ID {fromKEM_ID :: Word16} deriving (Eq)
+
+{- FOURMOLU_DISABLE -}
+pattern DHKEM_P256_HKDF_SHA256   :: KEM_ID
+pattern DHKEM_P256_HKDF_SHA256    = KEM_ID 0x0010
+pattern DHKEM_P384_HKDF_SHA384   :: KEM_ID
+pattern DHKEM_P384_HKDF_SHA384    = KEM_ID 0x0011
+pattern DHKEM_P512_HKDF_SHA512   :: KEM_ID
+pattern DHKEM_P512_HKDF_SHA512    = KEM_ID 0x0012
+pattern DHKEM_X25519_HKDF_SHA256 :: KEM_ID
+pattern DHKEM_X25519_HKDF_SHA256  = KEM_ID 0x0020
+pattern DHKEM_X448_HKDF_SHA512   :: KEM_ID
+pattern DHKEM_X448_HKDF_SHA512    = KEM_ID 0x0021
+
+instance Show KEM_ID where
+    show DHKEM_P256_HKDF_SHA256   = "DHKEM(P-256, HKDF-SHA256)"
+    show DHKEM_P384_HKDF_SHA384   = "DHKEM(P-384, HKDF-SHA384)"
+    show DHKEM_P512_HKDF_SHA512   = "DHKEM(P-521, HKDF-SHA512)"
+    show DHKEM_X25519_HKDF_SHA256 = "DHKEM(X25519, HKDF-SHA256)"
+    show DHKEM_X448_HKDF_SHA512   = "DHKEM(X448, HKDF-SHA512)"
+    show (KEM_ID n)               = "DHKEM_ID 0x" ++ printf "%04x" n
+{- FOURMOLU_ENABLE -}
 
 ----------------------------------------------------------------
 
@@ -214,3 +250,10 @@ newEnvP kem_id (EncodedSecretKey skRm) (EncodedPublicKey pkRm) = env
     skR = noFail (decodeScalar proxy skRm) :: SecretKey curve
     pkR = noFail (decodePoint proxy pkRm) :: PublicKey curve
     env = newEnv kem_id skR pkR :: Env curve
+
+----------------------------------------------------------------
+
+suiteKEM :: KEM_ID -> Suite
+suiteKEM kem_id = "KEM" <> i
+  where
+    i = i2ospOf_ 2 $ fromIntegral $ fromKEM_ID kem_id

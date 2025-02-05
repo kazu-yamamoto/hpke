@@ -3,8 +3,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Crypto.HPKE.KeySchedule (
-    -- * Mode
+    -- * Types
     Mode (..),
+    KEM_ID (..),
+    KDF_ID (..),
+    AEAD_ID (..),
 
     -- * Sender
     ContextS,
@@ -23,8 +26,8 @@ import Data.IORef
 import Data.Word
 
 import Crypto.HPKE.AEAD
-import Crypto.HPKE.ID
 import Crypto.HPKE.KDF
+import Crypto.HPKE.KEM
 import Crypto.HPKE.Types
 
 ----------------------------------------------------------------
@@ -227,3 +230,10 @@ keySchedule h (nk, nn) mode suite shared_secret info psk psk_id =
     exporter_secret = labeledExpand suite secret "exp" key_schedule_context $ hashDigestSize h
 
 ----------------------------------------------------------------
+
+suiteHPKE :: KEM_ID -> KDF_ID -> AEAD_ID -> Suite
+suiteHPKE kem_id hkdf_id aead_id = "HPKE" <> i0 <> i1 <> i2
+  where
+    i0 = i2ospOf_ 2 $ fromIntegral $ fromKEM_ID kem_id
+    i1 = i2ospOf_ 2 $ fromIntegral $ fromKDF_ID hkdf_id
+    i2 = i2ospOf_ 2 $ fromIntegral $ fromAEAD_ID aead_id

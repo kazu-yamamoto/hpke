@@ -6,16 +6,9 @@ module Crypto.HPKE (
     setupBaseS,
     setupBaseS',
     setupBaseR,
-    KEM_ID (
-        DHKEM_P256_HKDF_SHA256,
-        DHKEM_P384_HKDF_SHA384,
-        DHKEM_P512_HKDF_SHA512,
-        DHKEM_X25519_HKDF_SHA256,
-        DHKEM_X448_HKDF_SHA512,
-        ..
-    ),
-    KDF_ID (HKDF_SHA256, HKDF_SHA384, HKDF_SHA512, ..),
-    AEAD_ID (AES_128_GCM, AES_256_GCM, ChaCha20Poly1305),
+    KEM_ID (..),
+    KDF_ID (..),
+    AEAD_ID (..),
     EncodedSecretKey (..),
     EncodedPublicKey (..),
     SharedSecret (..),
@@ -38,7 +31,6 @@ module Crypto.HPKE (
     CipherText,
 ) where
 
-import Crypto.HPKE.ID
 import Crypto.HPKE.KeySchedule
 import Crypto.HPKE.Setup
 import Crypto.HPKE.Types
