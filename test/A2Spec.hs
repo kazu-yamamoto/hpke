@@ -51,14 +51,14 @@ spec = do
             ct0' <- seal ctxS aad0 pt
             ct0' `shouldBe` ct0
             pt0 <- open ctxR aad0 ct0
-            pt0 `shouldBe` Right pt
+            pt0 `shouldBe` pt
             let aad1 = "\x43\x6f\x75\x6e\x74\x2d\x31"
                 ct1 =
                     "\x6b\x53\xc0\x51\xe4\x19\x9c\x51\x8d\xe7\x95\x94\xe1\xc4\xab\x18\xb9\x6f\x08\x15\x49\xd4\x5c\xe0\x15\xbe\x00\x20\x90\xbb\x11\x9e\x85\x28\x53\x37\xcc\x95\xba\x5f\x59\x99\x2d\xc9\x8c"
             ct1' <- seal ctxS aad1 pt
             ct1' `shouldBe` ct1
             pt1 <- open ctxR aad1 ct1
-            pt1 `shouldBe` Right pt
+            pt1 `shouldBe` pt
 
         it "A.2.2. PSK Setup Information" $ do
             let info =
@@ -109,11 +109,11 @@ spec = do
             ct0' <- seal ctxS aad0 pt
             ct0' `shouldBe` ct0
             pt0 <- open ctxR aad0 ct0
-            pt0 `shouldBe` Right pt
+            pt0 `shouldBe` pt
             let aad1 = "\x43\x6f\x75\x6e\x74\x2d\x31"
                 ct1 =
                     "\x5c\x3c\xab\xae\x2f\x0b\x3e\x12\x4d\x8d\x86\x4c\x11\x6f\xd8\xf2\x0f\x3f\x56\xfd\xa9\x88\xc3\x57\x3b\x40\xb0\x99\x97\xfd\x6c\x76\x9e\x77\xc8\xed\xa6\xcd\xa4\xf9\x47\xf5\xb7\x04\xa8"
             ct1' <- seal ctxS aad1 pt
             ct1' `shouldBe` ct1
             pt1 <- open ctxR aad1 ct1
-            pt1 `shouldBe` Right pt
+            pt1 `shouldBe` pt

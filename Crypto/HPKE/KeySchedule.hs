@@ -21,10 +21,8 @@ module Crypto.HPKE.KeySchedule (
 ) where
 
 import qualified Control.Exception as E
-import Control.Monad (when)
 import Data.ByteArray (xor)
 import qualified Data.ByteString as BS
-import Data.Either (isRight)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 
 import Crypto.HPKE.AEAD
@@ -83,17 +81,19 @@ seal ContextS{..} aad pt = do
 
 -- | Decryption.
 open
-    :: ContextR -> AAD -> CipherText -> IO (Either HpkeError PlainText)
+    :: ContextR -> AAD -> CipherText -> IO PlainText
 open ContextR{..} aad ct = do
     seqI <- readIORef seqRefR
     let len = BS.length nonceBaseR
         seqBS = i2ospOf_ len seqI :: ByteString
         nonce = seqBS `xor` nonceBaseR
         ept = openR nonce aad ct
-    when (isRight ept) $ do
-        let seqI' = seqI + 1
-        writeIORef seqRefR seqI'
-    return ept
+    case ept of
+        Left err -> E.throwIO err
+        Right pt -> do
+            let seqI' = seqI + 1
+            writeIORef seqRefR seqI'
+            return pt
 
 ----------------------------------------------------------------
 
