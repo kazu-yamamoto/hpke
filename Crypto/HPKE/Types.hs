@@ -19,8 +19,6 @@ module Crypto.HPKE.Types (
     Seal,
     OpenK,
     Open,
-    PublicKey,
-    SecretKey,
     EncodedPublicKey (..),
     EncodedSecretKey (..),
     Info,
@@ -36,8 +34,8 @@ module Crypto.HPKE.Types (
     ByteString,
 ) where
 
-import Crypto.ECC (Point, Scalar, SharedSecret (..))
-import Crypto.Error
+import Crypto.ECC (SharedSecret (..))
+import Crypto.Error (CryptoFailable, throwCryptoError)
 import Crypto.Hash.IO (hashDigestSize)
 import Crypto.Number.Serialize (i2ospOf_)
 import qualified Crypto.PubKey.Curve25519 as X25519
@@ -94,9 +92,6 @@ noFail :: CryptoFailable a -> a
 noFail = throwCryptoError
 
 ----------------------------------------------------------------
-
-type PublicKey curve = Point curve
-type SecretKey curve = Scalar curve
 
 -- | Encoded public key.
 newtype EncodedPublicKey = EncodedPublicKey ByteString deriving (Eq)

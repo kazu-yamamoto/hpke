@@ -28,6 +28,8 @@ import Crypto.ECC (
     EllipticCurveBasepointArith (..),
     EllipticCurveDH (..),
     KeyPair (..),
+    Point,
+    Scalar,
     decodePoint,
     decodeScalar,
  )
@@ -73,6 +75,9 @@ instance Show KEM_ID where
 {- FOURMOLU_ENABLE -}
 
 ----------------------------------------------------------------
+
+type PublicKey curve = Point curve
+type SecretKey curve = Scalar curve
 
 data Env curve = Env
     { envSecretKey :: SecretKey curve
