@@ -20,6 +20,9 @@ module Crypto.HPKE.ID (
     ),
     defaultKemMap,
     KEMGroup (..),
+    --
+    HPKEMap (..),
+    defaultHPKEMap,
 ) where
 
 import Crypto.Cipher.AES (AES128, AES256)
@@ -161,3 +164,19 @@ defaultKemMap =
     , (DHKEM_X448_HKDF_SHA512,   (KEMGroup x448,   KDFHash SHA512))
     ]
 {- FOURMOLU_ENABLE -}
+
+----------------------------------------------------------------
+
+data HPKEMap = HPKEMap
+    { kemMap :: [(KEM_ID, (KEMGroup, KDFHash))]
+    , kdfMap :: [(KDF_ID, KDFHash)]
+    , cipherMap :: [(AEAD_ID, AeadCipher)]
+    }
+
+defaultHPKEMap :: HPKEMap
+defaultHPKEMap =
+    HPKEMap
+        { kemMap = defaultKemMap
+        , kdfMap = defaultKdfMap
+        , cipherMap = defaultCipherMap
+        }

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Crypto.HPKE.Setup (
     setupBaseS,
@@ -27,7 +28,7 @@ setupBaseS
     -> Info
     -> IO (EncodedPublicKey, ContextS)
 setupBaseS kem_id kdf_id aead_id pkRm info =
-    setupBS ModeBase kem_id kdf_id aead_id pkRm info "" ""
+    setupBS defaultHPKEMap ModeBase kem_id kdf_id aead_id pkRm info "" ""
 
 -- | Setting up base mode for a sender with its key pair.
 setupBaseS'
@@ -40,7 +41,7 @@ setupBaseS'
     -> Info
     -> IO (EncodedPublicKey, ContextS)
 setupBaseS' kem_id kdf_id aead_id skEm pkEm pkRm info =
-    setupBS' ModeBase kem_id kdf_id aead_id skEm pkEm pkRm info "" ""
+    setupBS' defaultHPKEMap ModeBase kem_id kdf_id aead_id skEm pkEm pkRm info "" ""
 
 -- | Setting up base mode for a receiver with its key pair.
 setupBaseR
@@ -53,7 +54,7 @@ setupBaseR
     -> Info
     -> IO ContextR
 setupBaseR kem_id kdf_id aead_id skRm pkRm enc info =
-    setupBR ModeBase kem_id kdf_id aead_id skRm pkRm enc info "" ""
+    setupBR defaultHPKEMap ModeBase kem_id kdf_id aead_id skRm pkRm enc info "" ""
 
 ----------------------------------------------------------------
 
@@ -67,7 +68,7 @@ setupPSKS
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupPSKS = setupBS ModePsk
+setupPSKS = setupBS defaultHPKEMap ModePsk
 
 -- | Setting up PSK mode for a sender with its key pair.
 setupPSKS'
@@ -81,7 +82,7 @@ setupPSKS'
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupPSKS' = setupBS' ModePsk
+setupPSKS' = setupBS' defaultHPKEMap ModePsk
 
 -- | Setting up PSK mode for a receiver with its key pair.
 setupPSKR
@@ -95,12 +96,13 @@ setupPSKR
     -> PSK
     -> PSK_ID
     -> IO ContextR
-setupPSKR = setupBR ModePsk
+setupPSKR = setupBR defaultHPKEMap ModePsk
 
 ----------------------------------------------------------------
 
 setupBS
-    :: Mode
+    :: HPKEMap
+    -> Mode
     -> KEM_ID
     -> KDF_ID
     -> AEAD_ID
@@ -109,8 +111,8 @@ setupBS
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupBS mode kem_id kdf_id aead_id pkRm info psk psk_id =
-    withLookup mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
+setupBS hpkeMap mode kem_id kdf_id aead_id pkRm info psk psk_id =
+    withLookup hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
         encap <- encapGen group derive
         case encap pkRm of
             Left err -> E.throwIO err
@@ -120,7 +122,8 @@ setupBS mode kem_id kdf_id aead_id pkRm info psk psk_id =
                 return (enc, ctx)
 
 setupBS'
-    :: Mode
+    :: HPKEMap
+    -> Mode
     -> KEM_ID
     -> KDF_ID
     -> AEAD_ID
@@ -131,8 +134,8 @@ setupBS'
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupBS' mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id =
-    withLookup mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
+setupBS' hpkeMap mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id =
+    withLookup hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
         let encap = encapEnv group derive skEm pkEm
         case encap pkRm of
             Left err -> E.throwIO err
@@ -142,7 +145,8 @@ setupBS' mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id =
                 return (enc, ctx)
 
 setupBR
-    :: Mode
+    :: HPKEMap
+    -> Mode
     -> KEM_ID
     -> KDF_ID
     -> AEAD_ID
@@ -153,8 +157,8 @@ setupBR
     -> PSK
     -> PSK_ID
     -> IO ContextR
-setupBR mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id =
-    withLookup mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule _ open' -> do
+setupBR hpkeMap mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id =
+    withLookup hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule _ open' -> do
         let decap = decapEnv group derive skRm pkRm
         case decap enc of
             Left err -> E.throwIO err
@@ -165,18 +169,20 @@ setupBR mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id =
 ----------------------------------------------------------------
 
 look
-    :: KEM_ID
+    :: HPKEMap
+    -> KEM_ID
     -> KDF_ID
     -> AEAD_ID
     -> Either HpkeError ((KEMGroup, KDFHash), KDFHash, AeadCipher)
-look kem_id kdf_id aead_id = do
-    k <- lookupE kem_id defaultKemMap
-    h <- lookupE kdf_id defaultKdfMap
-    a <- lookupE aead_id defaultCipherMap
+look HPKEMap{..} kem_id kdf_id aead_id = do
+    k <- lookupE kem_id kemMap
+    h <- lookupE kdf_id kdfMap
+    a <- lookupE aead_id cipherMap
     return (k, h, a)
 
 withLookup
-    :: Mode
+    :: HPKEMap
+    -> Mode
     -> KEM_ID
     -> KDF_ID
     -> AEAD_ID
@@ -191,8 +197,8 @@ withLookup
          -> IO a
        )
     -> IO a
-withLookup mode kem_id kdf_id aead_id info psk psk_id body =
-    case look kem_id kdf_id aead_id of
+withLookup hpkeMap mode kem_id kdf_id aead_id info psk psk_id body =
+    case look hpkeMap kem_id kdf_id aead_id of
         Left err -> E.throwIO err
         Right ((group, KDFHash h), KDFHash h', AeadCipher c) -> do
             let suite = suiteKEM kem_id
