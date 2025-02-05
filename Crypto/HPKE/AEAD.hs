@@ -18,8 +18,6 @@ import qualified Crypto.Cipher.Types as Cipher
 import Data.ByteArray (ByteArray, ByteArrayAccess)
 import qualified Data.ByteString as BS
 import Data.Tuple (swap)
-import Data.Word
-import Text.Printf
 
 import Crypto.HPKE.Types
 

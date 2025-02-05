@@ -24,8 +24,7 @@ import Control.Monad (when)
 import Data.ByteArray (xor)
 import qualified Data.ByteString as BS
 import Data.Either (isRight)
-import Data.IORef
-import Data.Word
+import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 
 import Crypto.HPKE.AEAD
 import Crypto.HPKE.KDF

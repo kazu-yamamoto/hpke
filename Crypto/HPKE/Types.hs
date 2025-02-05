@@ -28,6 +28,9 @@ module Crypto.HPKE.Types (
     convert,
     Proxy (..),
     ByteString,
+    Word8,
+    Word16,
+    printf,
 ) where
 
 import Crypto.ECC (SharedSecret (..))
@@ -40,6 +43,8 @@ import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Char8 as C8
 import Data.Proxy (Proxy (..))
 import Data.String
+import Data.Word (Word16, Word8)
+import Text.Printf (printf)
 
 ----------------------------------------------------------------
 

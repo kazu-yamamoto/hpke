@@ -22,8 +22,6 @@ import Crypto.Hash.Algorithms (
  )
 import Crypto.KDF.HKDF (PRK)
 import qualified Crypto.KDF.HKDF as HKDF
-import Data.Word
-import Text.Printf
 
 import Crypto.HPKE.Types
 

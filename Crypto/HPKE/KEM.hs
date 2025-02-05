@@ -36,8 +36,6 @@ import Crypto.ECC (
 import qualified Crypto.PubKey.Curve25519 as X25519
 import qualified Crypto.PubKey.Curve448 as X448
 import Crypto.Random (drgNew, withDRG)
-import Data.Word (Word16)
-import Text.Printf
 
 import Crypto.HPKE.KDF
 import Crypto.HPKE.Types
