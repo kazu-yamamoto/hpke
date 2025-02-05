@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 
 module Crypto.HPKE.Setup (
     setupBaseS,
@@ -65,8 +64,7 @@ setupPSKS
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupPSKS kem_id kdf_id aead_id pkRm info psk psk_id =
-    setupBS ModePsk kem_id kdf_id aead_id pkRm info psk psk_id
+setupPSKS = setupBS ModePsk
 
 -- | Setting up PSK mode for a sender with its key pair.
 setupPSKS'
@@ -80,8 +78,7 @@ setupPSKS'
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupPSKS' kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id =
-    setupBS' ModePsk kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id
+setupPSKS' = setupBS' ModePsk
 
 -- | Setting up PSK mode for a receiver with its key pair.
 setupPSKR
@@ -95,8 +92,7 @@ setupPSKR
     -> PSK
     -> PSK_ID
     -> IO ContextR
-setupPSKR kem_id kdf_id aead_id skRm pkRm enc info psk psk_id =
-    setupBR ModePsk kem_id kdf_id aead_id skRm pkRm enc info psk psk_id
+setupPSKR = setupBR ModePsk
 
 ----------------------------------------------------------------
 

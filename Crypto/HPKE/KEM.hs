@@ -126,7 +126,6 @@ encap Env{..} enc0@(EncodedPublicKey pkRm) = do
         kem_context = pkEm <> pkRm
         shared_secret = SharedSecret $ convert $ envDerive dh kem_context
     return (shared_secret, enc)
-  where
 
 encapGen
     :: KEM_ID

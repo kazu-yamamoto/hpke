@@ -1,6 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
-
 module Crypto.HPKE (
     -- * Base setup
     setupBaseS,

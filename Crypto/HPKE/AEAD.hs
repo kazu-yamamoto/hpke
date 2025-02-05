@@ -122,8 +122,7 @@ initAES key nonce = case mst of
   where
     mst = do
         st0 <- Cipher.cipherInit key
-        st1 <- Cipher.aeadInit Cipher.AEAD_GCM st0 nonce
-        return st1
+        Cipher.aeadInit Cipher.AEAD_GCM st0 nonce
 
 ----------------------------------------------------------------
 
