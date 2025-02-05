@@ -1,6 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Crypto.HPKE.Types (
     HpkeError (..),
@@ -38,7 +37,6 @@ import Crypto.ECC (SharedSecret (..))
 import Crypto.Error (CryptoFailable, throwCryptoError)
 import Crypto.Hash.IO (hashDigestSize)
 import Crypto.Number.Serialize (i2ospOf_)
-import qualified Crypto.PubKey.Curve25519 as X25519
 import Data.ByteArray (convert)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base16 as B16
@@ -115,19 +113,6 @@ showBS16 :: ByteString -> String
 showBS16 bs = "\"" <> s16 <> "\""
   where
     s16 = C8.unpack $ B16.encode bs
-
-instance IsString X25519.PublicKey where
-    fromString s = throwCryptoError $ X25519.publicKey bs
-      where
-        bs = fromString s :: ByteString
-
-instance IsString X25519.SecretKey where
-    fromString s = throwCryptoError $ X25519.secretKey bs
-      where
-        bs = fromString s :: ByteString
-
-instance Show SharedSecret where
-    show (SharedSecret sb) = showBS16 $ convert sb
 
 ----------------------------------------------------------------
 
