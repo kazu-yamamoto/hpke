@@ -5,7 +5,6 @@ module Crypto.HPKE.KEM (
     encapGen,
     encapEnv,
     decapEnv,
-    DeserialSK (..),
 )
 where
 
@@ -34,7 +33,7 @@ encap Env{..} enc0@(EncodedPublicKey pkRm) = do
     return (shared_secret, enc)
 
 encapGen
-    :: (EllipticCurve group, EllipticCurveDH group, DeserialSK group)
+    :: (EllipticCurve group, EllipticCurveDH group)
     => Proxy group
     -> KeyDeriveFunction
     -> IO Encap
@@ -43,7 +42,7 @@ encapGen proxy derive = do
     return $ encap env
 
 encapEnv
-    :: (EllipticCurve group, EllipticCurveDH group, DeserialSK group)
+    :: (EllipticCurve group, EllipticCurveDH group)
     => Proxy group
     -> KeyDeriveFunction
     -> EncodedSecretKey
@@ -68,7 +67,7 @@ decap Env{..} enc@(EncodedPublicKey pkEm) = do
     return shared_secret
 
 decapEnv
-    :: (EllipticCurve group, EllipticCurveDH group, DeserialSK group)
+    :: (EllipticCurve group, EllipticCurveDH group)
     => Proxy group
     -> KeyDeriveFunction
     -> EncodedSecretKey
@@ -121,14 +120,14 @@ genEnv proxy derive = do
 ----------------------------------------------------------------
 
 newEnvDeserialize
-    :: (EllipticCurve group, DeserialSK group)
+    :: EllipticCurve group
     => Proxy group
     -> KeyDeriveFunction
     -> EncodedSecretKey
     -> EncodedPublicKey
     -> Either HPKEError (Env group)
 newEnvDeserialize proxy derive skRm pkRm = do
-    skR <- deserializeSK proxy skRm
+    skR <- deserializeSecretKey proxy skRm
     pkR <- deserializePublicKey proxy pkRm
     return $ newEnv derive skR pkR
 

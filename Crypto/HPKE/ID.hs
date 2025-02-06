@@ -42,7 +42,6 @@ import Text.Printf (printf)
 
 import Crypto.HPKE.AEAD
 import Crypto.HPKE.KDF
-import Crypto.HPKE.KEM
 
 ----------------------------------------------------------------
 
@@ -155,7 +154,7 @@ x448   :: Proxy Curve_X448
 x448    = Proxy :: Proxy Curve_X448
 
 data KEMGroup
-    = forall c. (EllipticCurve c, EllipticCurveDH c, DeserialSK c) => KEMGroup (Proxy c)
+    = forall c. (EllipticCurve c, EllipticCurveDH c) => KEMGroup (Proxy c)
 
 defaultKEMMap :: [(KEM_ID, (KEMGroup, KDFHash))]
 defaultKEMMap =

@@ -18,7 +18,6 @@ module Crypto.HPKE.Internal (
     -- * API
     Aead (..),
     KDF (..),
-    DeserialSK (..),
 
     -- * Types
     Mode (..),
