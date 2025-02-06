@@ -207,7 +207,8 @@ withHpkeMap
          -> IO a
        )
     -> IO a
-withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id body =
+withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id body = do
+    verifyPSKInput mode psk psk_id
     case look hpkeMap kem_id kdf_id aead_id of
         Left err -> E.throwIO err
         Right ((group, KDFHash h), KDFHash h', AEADCipher c) -> do
@@ -220,6 +221,19 @@ withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id body =
                 suite' = suiteHPKE kem_id kdf_id aead_id
                 schedule = keySchedule h' suite' nk nn mode info psk psk_id
             body group derive schedule seal' open'
+
+verifyPSKInput :: Mode -> PSK -> PSK_ID -> IO ()
+verifyPSKInput mode psk psk_id
+    | got_psk /= got_psk_id =
+        E.throwIO $ ValidationError "mismatch for psk and psk_id"
+    | got_psk && mode `elem` [ModeBase, ModeAuth] =
+        E.throwIO $ ValidationError "invalid mode (1)"
+    | (not got_psk) && mode `elem` [ModePsk, ModeAuthPsk] =
+        E.throwIO $ ValidationError "invalid mode (2)"
+    | otherwise = return ()
+  where
+    got_psk = psk /= ""
+    got_psk_id = psk_id /= ""
 
 ----------------------------------------------------------------
 
