@@ -52,16 +52,19 @@ import Text.Printf (printf)
 
 ----------------------------------------------------------------
 
+-- | Errors for HPKE
 data HpkeError
     = ValidationError String
     | DeserializeError String
     | EncapError String
     | DecapError String
-    | SealError String -- original
+    | -- | Original
+      SealError String
     | OpenError String
     | MessageLimitReachedError String
     | DeriveKeyPairError String
-    | Unsupported String -- original
+    | -- | Original
+      Unsupported String
     deriving (Eq, Show)
 
 instance Exception HpkeError
