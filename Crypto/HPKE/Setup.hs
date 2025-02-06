@@ -13,6 +13,7 @@ module Crypto.HPKE.Setup (
 import qualified Control.Exception as E
 
 import Crypto.HPKE.AEAD
+import Crypto.HPKE.Context
 import Crypto.HPKE.ID
 import Crypto.HPKE.KDF
 import Crypto.HPKE.KEM

@@ -38,7 +38,7 @@ module Crypto.HPKE (
     HpkeError (..),
 ) where
 
+import Crypto.HPKE.Context
 import Crypto.HPKE.ID
-import Crypto.HPKE.KeySchedule
 import Crypto.HPKE.Setup
 import Crypto.HPKE.Types
