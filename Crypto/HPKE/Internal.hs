@@ -6,8 +6,9 @@ module Crypto.HPKE.Internal (
     -- * Extensible map
     HPKEMap (..),
     defaultHPKEMap,
-    setupBS,
-    setupBR,
+    setupS,
+    setupS',
+    setupR,
 
     -- * Unified types
     KEMGroup (..),

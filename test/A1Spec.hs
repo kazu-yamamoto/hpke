@@ -6,6 +6,7 @@ import Data.ByteString ()
 import Test.Hspec
 
 import Crypto.HPKE
+import Crypto.HPKE.Internal
 
 spec :: Spec
 spec = do

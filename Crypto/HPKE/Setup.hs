@@ -8,8 +8,9 @@ module Crypto.HPKE.Setup (
     setupPSKS,
     setupPSKS',
     setupPSKR,
-    setupBS,
-    setupBR,
+    setupS,
+    setupS',
+    setupR,
 ) where
 
 import qualified Control.Exception as E
@@ -32,7 +33,7 @@ setupBaseS
     -> Info
     -> IO (EncodedPublicKey, ContextS)
 setupBaseS kem_id kdf_id aead_id pkRm info =
-    setupBS defaultHPKEMap ModeBase kem_id kdf_id aead_id pkRm info "" ""
+    setupS defaultHPKEMap ModeBase kem_id kdf_id aead_id pkRm info "" ""
 
 -- | Setting up base mode for a sender with its key pair.
 --   This throws 'HpkeError'.
@@ -46,7 +47,7 @@ setupBaseS'
     -> Info
     -> IO (EncodedPublicKey, ContextS)
 setupBaseS' kem_id kdf_id aead_id skEm pkEm pkRm info =
-    setupBS' defaultHPKEMap ModeBase kem_id kdf_id aead_id skEm pkEm pkRm info "" ""
+    setupS' defaultHPKEMap ModeBase kem_id kdf_id aead_id skEm pkEm pkRm info "" ""
 
 -- | Setting up base mode for a receiver with its key pair.
 --   This throws 'HpkeError'.
@@ -60,7 +61,7 @@ setupBaseR
     -> Info
     -> IO ContextR
 setupBaseR kem_id kdf_id aead_id skRm pkRm enc info =
-    setupBR defaultHPKEMap ModeBase kem_id kdf_id aead_id skRm pkRm enc info "" ""
+    setupR defaultHPKEMap ModeBase kem_id kdf_id aead_id skRm pkRm enc info "" ""
 
 ----------------------------------------------------------------
 
@@ -75,7 +76,7 @@ setupPSKS
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupPSKS = setupBS defaultHPKEMap ModePsk
+setupPSKS = setupS defaultHPKEMap ModePsk
 
 -- | Setting up PSK mode for a sender with its key pair.
 --   This throws 'HpkeError'.
@@ -90,7 +91,7 @@ setupPSKS'
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupPSKS' = setupBS' defaultHPKEMap ModePsk
+setupPSKS' = setupS' defaultHPKEMap ModePsk
 
 -- | Setting up PSK mode for a receiver with its key pair.
 --   This throws 'HpkeError'.
@@ -105,11 +106,11 @@ setupPSKR
     -> PSK
     -> PSK_ID
     -> IO ContextR
-setupPSKR = setupBR defaultHPKEMap ModePsk
+setupPSKR = setupR defaultHPKEMap ModePsk
 
 ----------------------------------------------------------------
 
-setupBS
+setupS
     :: HPKEMap
     -> Mode
     -> KEM_ID
@@ -120,7 +121,7 @@ setupBS
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupBS hpkeMap mode kem_id kdf_id aead_id pkRm info psk psk_id =
+setupS hpkeMap mode kem_id kdf_id aead_id pkRm info psk psk_id =
     withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
         encap <- encapGen group derive
         case encap pkRm of
@@ -130,7 +131,7 @@ setupBS hpkeMap mode kem_id kdf_id aead_id pkRm info psk psk_id =
                 ctx <- newContextS quad seal'
                 return (enc, ctx)
 
-setupBS'
+setupS'
     :: HPKEMap
     -> Mode
     -> KEM_ID
@@ -143,7 +144,7 @@ setupBS'
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupBS' hpkeMap mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id =
+setupS' hpkeMap mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id =
     withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
         let encap = encapEnv group derive skEm pkEm
         case encap pkRm of
@@ -153,7 +154,7 @@ setupBS' hpkeMap mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id =
                 ctx <- newContextS quad seal'
                 return (enc, ctx)
 
-setupBR
+setupR
     :: HPKEMap
     -> Mode
     -> KEM_ID
@@ -166,7 +167,7 @@ setupBR
     -> PSK
     -> PSK_ID
     -> IO ContextR
-setupBR hpkeMap mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id =
+setupR hpkeMap mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id =
     withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule _ open' -> do
         let decap = decapEnv group derive skRm pkRm
         case decap enc of
