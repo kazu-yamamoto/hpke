@@ -33,7 +33,7 @@ module Crypto.HPKE (
     CipherText,
 
     -- * Error
-    HpkeError (..),
+    HPKEError (..),
 ) where
 
 import Crypto.HPKE.Context

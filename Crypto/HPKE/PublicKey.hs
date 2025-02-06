@@ -33,14 +33,14 @@ import Crypto.HPKE.Types
 
 ----------------------------------------------------------------
 
-type PublicKey curve = Point curve
-type SecretKey curve = Scalar curve
+type PublicKey group = Point group
+type SecretKey group = Scalar group
 
 ----------------------------------------------------------------
 
-class DeserialSK curve where
+class DeserialSK group where
     deserializeSK
-        :: Proxy curve -> EncodedSecretKey -> Either HpkeError (SecretKey curve)
+        :: Proxy group -> EncodedSecretKey -> Either HPKEError (SecretKey group)
 
 instance DeserialSK Curve_P256R1 where
     deserializeSK proxy (EncodedSecretKey sk) = case decodeScalar proxy sk of
@@ -68,13 +68,13 @@ instance DeserialSK Curve_X448 where
         CryptoFailed _ -> Left $ DeserializeError "X448"
 
 serializePublicKey
-    :: EllipticCurve curve
-    => Proxy curve -> PublicKey curve -> EncodedPublicKey
+    :: EllipticCurve group
+    => Proxy group -> PublicKey group -> EncodedPublicKey
 serializePublicKey proxy pk = EncodedPublicKey $ encodePoint proxy pk
 
 deserializePublicKey
-    :: EllipticCurve curve
-    => Proxy curve -> EncodedPublicKey -> Either HpkeError (PublicKey curve)
+    :: EllipticCurve group
+    => Proxy group -> EncodedPublicKey -> Either HPKEError (PublicKey group)
 deserializePublicKey proxy (EncodedPublicKey pkm) =
     case decodePoint proxy pkm of
         CryptoPassed a -> Right a

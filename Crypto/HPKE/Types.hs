@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module Crypto.HPKE.Types (
-    HpkeError (..),
+    HPKEError (..),
     Salt,
     IKM,
     Key,
@@ -53,7 +53,7 @@ import Text.Printf (printf)
 ----------------------------------------------------------------
 
 -- | Errors for HPKE
-data HpkeError
+data HPKEError
     = ValidationError String
     | DeserializeError String
     | EncapError String
@@ -67,7 +67,7 @@ data HpkeError
       Unsupported String
     deriving (Eq, Show)
 
-instance Exception HpkeError
+instance Exception HPKEError
 
 ----------------------------------------------------------------
 
@@ -91,8 +91,8 @@ type PlainText = ByteString
 -- | Cipher text (including a authentication tag)
 type CipherText = ByteString
 
-type Seal = Nonce -> AAD -> PlainText -> Either HpkeError CipherText
-type Open = Nonce -> AAD -> CipherText -> Either HpkeError PlainText
+type Seal = Nonce -> AAD -> PlainText -> Either HPKEError CipherText
+type Open = Nonce -> AAD -> CipherText -> Either HPKEError PlainText
 
 ----------------------------------------------------------------
 
@@ -122,8 +122,8 @@ showBS16 bs = "\"" <> s16 <> "\""
 ----------------------------------------------------------------
 
 type Encap =
-    EncodedPublicKey -> Either HpkeError (SharedSecret, EncodedPublicKey)
-type Decap = EncodedPublicKey -> Either HpkeError SharedSecret
+    EncodedPublicKey -> Either HPKEError (SharedSecret, EncodedPublicKey)
+type Decap = EncodedPublicKey -> Either HPKEError SharedSecret
 
 ----------------------------------------------------------------
 
@@ -138,7 +138,7 @@ type PSK_ID = ByteString
 
 ----------------------------------------------------------------
 
-lookupE :: (Eq k, Show k) => k -> [(k, v)] -> Either HpkeError v
+lookupE :: (Eq k, Show k) => k -> [(k, v)] -> Either HPKEError v
 lookupE k table = case lookup k table of
     Nothing -> Left $ Unsupported $ show k
     Just v -> Right v

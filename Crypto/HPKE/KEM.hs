@@ -22,8 +22,8 @@ import Crypto.HPKE.Types
 ----------------------------------------------------------------
 
 encap
-    :: (EllipticCurve curve, EllipticCurveDH curve)
-    => Env curve
+    :: (EllipticCurve group, EllipticCurveDH group)
+    => Env group
     -> Encap
 encap Env{..} enc0@(EncodedPublicKey pkRm) = do
     pkR <- deserializePublicKey envProxy enc0
@@ -34,8 +34,8 @@ encap Env{..} enc0@(EncodedPublicKey pkRm) = do
     return (shared_secret, enc)
 
 encapGen
-    :: (EllipticCurve curve, EllipticCurveDH curve, DeserialSK curve)
-    => Proxy curve
+    :: (EllipticCurve group, EllipticCurveDH group, DeserialSK group)
+    => Proxy group
     -> KeyDeriveFunction
     -> IO Encap
 encapGen proxy derive = do
@@ -43,8 +43,8 @@ encapGen proxy derive = do
     return $ encap env
 
 encapEnv
-    :: (EllipticCurve curve, EllipticCurveDH curve, DeserialSK curve)
-    => Proxy curve
+    :: (EllipticCurve group, EllipticCurveDH group, DeserialSK group)
+    => Proxy group
     -> KeyDeriveFunction
     -> EncodedSecretKey
     -> EncodedPublicKey
@@ -56,8 +56,8 @@ encapEnv proxy derive skRm pkRm enc = do
 ----------------------------------------------------------------
 
 decap
-    :: (EllipticCurve curve, EllipticCurveDH curve)
-    => Env curve
+    :: (EllipticCurve group, EllipticCurveDH group)
+    => Env group
     -> Decap
 decap Env{..} enc@(EncodedPublicKey pkEm) = do
     pkE <- deserializePublicKey envProxy enc
@@ -68,8 +68,8 @@ decap Env{..} enc@(EncodedPublicKey pkEm) = do
     return shared_secret
 
 decapEnv
-    :: (EllipticCurve curve, EllipticCurveDH curve, DeserialSK curve)
-    => Proxy curve
+    :: (EllipticCurve group, EllipticCurveDH group, DeserialSK group)
+    => Proxy group
     -> KeyDeriveFunction
     -> EncodedSecretKey
     -> EncodedPublicKey
@@ -81,10 +81,10 @@ decapEnv proxy derive skRm pkRm enc = do
 ----------------------------------------------------------------
 
 {- FOURMOLU_DISABLE -}
-data Env curve = Env
-    { envSecretKey :: SecretKey curve
-    , envPublicKey :: PublicKey curve
-    , envProxy     :: Proxy curve
+data Env group = Env
+    { envSecretKey :: SecretKey group
+    , envPublicKey :: PublicKey group
+    , envProxy     :: Proxy group
     , envDerive    :: KeyDeriveFunction
     }
 {- FOURMOLU_ENABLE -}
@@ -92,12 +92,12 @@ data Env curve = Env
 ----------------------------------------------------------------
 
 newEnv
-    :: forall curve
-     . EllipticCurve curve
+    :: forall group
+     . EllipticCurve group
     => KeyDeriveFunction
-    -> SecretKey curve
-    -> PublicKey curve
-    -> Env curve
+    -> SecretKey group
+    -> PublicKey group
+    -> Env group
 newEnv derive skR pkR =
     Env
         { envSecretKey = skR
@@ -106,13 +106,13 @@ newEnv derive skR pkR =
         , envDerive = derive
         }
   where
-    proxy = Proxy :: Proxy curve
+    proxy = Proxy :: Proxy group
 
 ----------------------------------------------------------------
 
 genEnv
-    :: EllipticCurve curve
-    => Proxy curve -> KeyDeriveFunction -> IO (Env curve)
+    :: EllipticCurve group
+    => Proxy group -> KeyDeriveFunction -> IO (Env group)
 genEnv proxy derive = do
     gen <- drgNew
     let (KeyPair pk sk, _) = withDRG gen $ curveGenerateKeyPair proxy
@@ -121,12 +121,12 @@ genEnv proxy derive = do
 ----------------------------------------------------------------
 
 newEnvDeserialize
-    :: (EllipticCurve curve, DeserialSK curve)
-    => Proxy curve
+    :: (EllipticCurve group, DeserialSK group)
+    => Proxy group
     -> KeyDeriveFunction
     -> EncodedSecretKey
     -> EncodedPublicKey
-    -> Either HpkeError (Env curve)
+    -> Either HPKEError (Env group)
 newEnvDeserialize proxy derive skRm pkRm = do
     skR <- deserializeSK proxy skRm
     pkR <- deserializePublicKey proxy pkRm
@@ -135,10 +135,10 @@ newEnvDeserialize proxy derive skRm pkRm = do
 ----------------------------------------------------------------
 
 ecdh'
-    :: EllipticCurveDH curve
-    => Proxy curve
-    -> SecretKey curve
-    -> PublicKey curve
+    :: EllipticCurveDH group
+    => Proxy group
+    -> SecretKey group
+    -> PublicKey group
     -> a
     -> Either a SharedSecret
 ecdh' proxy sk pk err = case ecdh proxy sk pk of

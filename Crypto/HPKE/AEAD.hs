@@ -53,7 +53,7 @@ type AeadEncrypt =
        , ByteArrayAccess a
        , ByteArray t
        )
-    => k -> n -> a -> t -> Either HpkeError (t, AuthTag)
+    => k -> n -> a -> t -> Either HPKEError (t, AuthTag)
 
 type AeadDecrypt =
     forall k n a t
@@ -62,7 +62,7 @@ type AeadDecrypt =
        , ByteArrayAccess a
        , ByteArray t
        )
-    => k -> n -> a -> t -> Either HpkeError (t, AuthTag)
+    => k -> n -> a -> t -> Either HPKEError (t, AuthTag)
 
 ----------------------------------------------------------------
 
