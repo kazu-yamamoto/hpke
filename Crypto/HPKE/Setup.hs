@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Crypto.HPKE.Setup (
     setupBaseS,
@@ -121,14 +122,19 @@ setupS
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupS hpkeMap mode kem_id kdf_id aead_id pkRm info psk psk_id =
-    withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
+setupS hpkeMap mode kem_id kdf_id aead_id pkRm info psk psk_id = do
+    verifyPSKInput mode psk psk_id
+    let r = look hpkeMap kem_id kdf_id aead_id
+    throwOnError r $ \((KEMGroup group, KDFHash h), KDFHash h', AEADCipher c) -> do
+        let derive = extractAndExpand h $ suiteKEM kem_id
         encap <- encapGen group derive
-        case encap pkRm of
-            Left err -> E.throwIO err
-            Right (shared_secret, enc) -> do
-                let quad = schedule shared_secret
-                ctx <- newContextS quad seal'
+        throwOnError (encap pkRm) $ \(shared_secret, enc) -> do
+            let (nk, nn, seal', _) = aeadParams c
+                suite' = suiteHPKE kem_id kdf_id aead_id
+                keys = keySchedule h' suite' nk nn mode info psk psk_id shared_secret
+            throwOnError keys $ \(key, nonce, _, prk) -> do
+                let expand' = labeledExpand suite' prk "sec"
+                ctx <- newContextS key nonce seal' expand'
                 return (enc, ctx)
 
 setupS'
@@ -144,14 +150,19 @@ setupS'
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupS' hpkeMap mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id =
-    withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
-        let encap = encapEnv group derive skEm pkEm
-        case encap pkRm of
-            Left err -> E.throwIO err
-            Right (shared_secret, enc) -> do
-                let quad = schedule shared_secret
-                ctx <- newContextS quad seal'
+setupS' hpkeMap mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id = do
+    verifyPSKInput mode psk psk_id
+    let r = look hpkeMap kem_id kdf_id aead_id
+    throwOnError r $ \((KEMGroup group, KDFHash h), KDFHash h', AEADCipher c) -> do
+        let derive = extractAndExpand h $ suiteKEM kem_id
+            encap = encapEnv group derive skEm pkEm
+        throwOnError (encap pkRm) $ \(shared_secret, enc) -> do
+            let (nk, nn, seal', _) = aeadParams c
+                suite' = suiteHPKE kem_id kdf_id aead_id
+                keys = keySchedule h' suite' nk nn mode info psk psk_id shared_secret
+            throwOnError keys $ \(key, nonce, _, prk) -> do
+                let expand' = labeledExpand suite' prk "sec"
+                ctx <- newContextS key nonce seal' expand'
                 return (enc, ctx)
 
 setupR
@@ -167,14 +178,28 @@ setupR
     -> PSK
     -> PSK_ID
     -> IO ContextR
-setupR hpkeMap mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id =
-    withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule _ open' -> do
-        let decap = decapEnv group derive skRm pkRm
-        case decap enc of
-            Left err -> E.throwIO err
-            Right shared_secret -> do
-                let quad = schedule shared_secret
-                newContextR quad open'
+setupR hpkeMap mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id = do
+    verifyPSKInput mode psk psk_id
+    let r = look hpkeMap kem_id kdf_id aead_id
+    throwOnError r $ \((KEMGroup group, KDFHash h), KDFHash h', AEADCipher c) -> do
+        let derive = extractAndExpand h $ suiteKEM kem_id
+            decap = decapEnv group derive skRm pkRm
+        throwOnError (decap enc) $ \shared_secret -> do
+            let (nk, nn, _, open') = aeadParams c
+                suite' = suiteHPKE kem_id kdf_id aead_id
+                keys = keySchedule h' suite' nk nn mode info psk psk_id shared_secret
+            throwOnError keys $ \(key, nonce, _, prk) -> do
+                let expand' = labeledExpand suite' prk "sec"
+                newContextR key nonce open' expand'
+
+aeadParams
+    :: Aead a
+    => Proxy a -> (Int, Int, Key -> Seal, Key -> Open)
+aeadParams c = (nK c, nN c, sealA c, openA c)
+
+throwOnError :: Either HPKEError v -> (v -> IO a) -> IO a
+throwOnError (Left err) _body = E.throwIO err
+throwOnError (Right ss) body = body ss
 
 ----------------------------------------------------------------
 
@@ -189,38 +214,6 @@ look HPKEMap{..} kem_id kdf_id aead_id = do
     h <- lookupE kdf_id kdfMap
     a <- lookupE aead_id cipherMap
     return (k, h, a)
-
-withHpkeMap
-    :: HPKEMap
-    -> Mode
-    -> KEM_ID
-    -> KDF_ID
-    -> AEAD_ID
-    -> Info
-    -> PSK
-    -> PSK_ID
-    -> ( KEMGroup
-         -> KeyDeriveFunction
-         -> (SharedSecret -> (ByteString, ByteString, Int, ByteString))
-         -> (Key -> Seal)
-         -> (Key -> Open)
-         -> IO a
-       )
-    -> IO a
-withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id body = do
-    verifyPSKInput mode psk psk_id
-    case look hpkeMap kem_id kdf_id aead_id of
-        Left err -> E.throwIO err
-        Right ((group, KDFHash h), KDFHash h', AEADCipher c) -> do
-            let suite = suiteKEM kem_id
-                derive = extractAndExpand h suite
-                nk = nK c
-                nn = nN c
-                seal' = sealA c
-                open' = openA c
-                suite' = suiteHPKE kem_id kdf_id aead_id
-                schedule = keySchedule h' suite' nk nn mode info psk psk_id
-            body group derive schedule seal' open'
 
 verifyPSKInput :: Mode -> PSK -> PSK_ID -> IO ()
 verifyPSKInput mode psk psk_id

@@ -19,6 +19,10 @@ module Crypto.HPKE (
     seal,
     open,
 
+    -- * Secret export
+    exportS,
+    exportR,
+
     -- * Types
     ContextS,
     ContextR,

@@ -5,11 +5,13 @@ module Crypto.HPKE.Context (
     ContextS,
     newContextS,
     seal,
+    exportS,
 
     -- * Receiver
     ContextR,
     newContextR,
     open,
+    exportR,
 ) where
 
 import qualified Control.Exception as E
@@ -26,6 +28,7 @@ data ContextS = ContextS
     { seqRefS :: IORef Integer
     , sealS :: Seal
     , nonceBaseS :: Nonce
+    , expandS :: Info -> Int -> Key
     }
 
 -- | Context for receivers.
@@ -33,6 +36,7 @@ data ContextR = ContextR
     { seqRefR :: IORef Integer
     , openR :: Open
     , nonceBaseR :: Nonce
+    , expandR :: Info -> Int -> Key
     }
 
 ----------------------------------------------------------------
@@ -71,30 +75,48 @@ open ContextR{..} aad ct = do
 
 ----------------------------------------------------------------
 
+-- | Exporting secret.
+exportS :: ContextS -> Info -> Int -> Key
+exportS ContextS{..} exporter_context len =
+    expandS exporter_context len
+
+-- | Exporting secret.
+exportR :: ContextR -> Info -> Int -> Key
+exportR ContextR{..} exporter_context len =
+    expandR exporter_context len
+
+----------------------------------------------------------------
+
 newContextS
-    :: (ByteString, ByteString, Int, ByteString)
+    :: Key
+    -> Nonce
     -> (Key -> Seal)
+    -> (Info -> Int -> Key)
     -> IO ContextS
-newContextS (key, nonce_base, _, _) seal' = do
+newContextS key nonce_base seal' expand = do
     seqref <- newIORef 0
     return $
         ContextS
             { seqRefS = seqref
             , sealS = seal' key
             , nonceBaseS = nonce_base
+            , expandS = expand
             }
 
 ----------------------------------------------------------------
 
 newContextR
-    :: (ByteString, ByteString, Int, ByteString)
+    :: Key
+    -> Nonce
     -> (Key -> Open)
+    -> (Info -> Int -> Key)
     -> IO ContextR
-newContextR (key, nonce_base, _, _) open' = do
+newContextR key nonce_base open' expand = do
     seqref <- newIORef 0
     return $
         ContextR
             { seqRefR = seqref
             , openR = open' key
             , nonceBaseR = nonce_base
+            , expandR = expand
             }

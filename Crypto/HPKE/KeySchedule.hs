@@ -9,6 +9,7 @@ module Crypto.HPKE.KeySchedule (
     keySchedule,
 ) where
 
+import Crypto.KDF.HKDF (toPRK)
 import qualified Data.ByteString as BS
 
 import Crypto.HPKE.KDF
@@ -45,9 +46,11 @@ keySchedule
     -> PSK
     -> PSK_ID
     -> SharedSecret
-    -> (ByteString, ByteString, Int, ByteString)
+    -> Either HPKEError (Key, Nonce, Int, PRK h)
 keySchedule h suite nk nn mode info psk psk_id shared_secret =
-    (key, base_nonce, 0, exporter_secret)
+    case toPRK exporter_secret of
+        Nothing -> Left $ KeyScheduleError "cannot convert to PRK"
+        Just prk -> Right (key, base_nonce, 0, prk)
   where
     psk_id_hash = labeledExtract suite "" "psk_id_hash" psk_id :: PRK h
     info_hash = labeledExtract suite "" "info_hash" info :: PRK h

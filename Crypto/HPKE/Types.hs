@@ -22,6 +22,7 @@ module Crypto.HPKE.Types (
     PSK_ID,
     Encap,
     Decap,
+    ExporterSecret,
     -- rexport
     CryptoFailable (..),
     SharedSecret (..),
@@ -64,7 +65,8 @@ data HPKEError
     | MessageLimitReachedError String
     | DeriveKeyPairError String
     | -- | Original
-      Unsupported String
+      KeyScheduleError String
+    | Unsupported String
     deriving (Eq, Show)
 
 instance Exception HPKEError
@@ -142,3 +144,7 @@ lookupE :: (Eq k, Show k) => k -> [(k, v)] -> Either HPKEError v
 lookupE k table = case lookup k table of
     Nothing -> Left $ Unsupported $ show k
     Just v -> Right v
+
+----------------------------------------------------------------
+
+type ExporterSecret = ByteString
