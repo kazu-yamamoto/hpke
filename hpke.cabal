@@ -21,6 +21,7 @@ library
                       Crypto.HPKE.KDF
                       Crypto.HPKE.KEM
                       Crypto.HPKE.KeySchedule
+                      Crypto.HPKE.PublicKey
                       Crypto.HPKE.Setup
                       Crypto.HPKE.Types
     default-language: Haskell2010
