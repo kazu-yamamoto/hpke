@@ -1,28 +1,35 @@
+-- | Hybrid Public Key Encryption (RFC9180).
 module Crypto.HPKE (
-    -- * Base setup
-    setupBaseS,
-    setupBaseS',
-    setupBaseR,
+    -- * IDs
     KEM_ID (..),
     KDF_ID (..),
     AEAD_ID (..),
-    EncodedSecretKey (..),
-    EncodedPublicKey (..),
-    SharedSecret (..),
-    Info,
-    ContextS,
-    ContextR,
 
-    -- * PSK setup
+    -- * Setup
+
+    -- ** Base
+    setupBaseS,
+    setupBaseS',
+    setupBaseR,
+
+    -- ** PSK setup
     setupPSKS,
     setupPSKS',
     setupPSKR,
-    PSK,
-    PSK_ID,
 
     -- * Encryption and Decyption
     seal,
     open,
+
+    -- * Types
+    ContextS,
+    ContextR,
+    EncodedSecretKey (..),
+    EncodedPublicKey (..),
+    SharedSecret (..),
+    Info,
+    PSK,
+    PSK_ID,
     AAD,
     PlainText,
     CipherText,

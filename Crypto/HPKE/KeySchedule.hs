@@ -64,6 +64,7 @@ data ContextR = ContextR
 ----------------------------------------------------------------
 
 -- | Encryption.
+--   This throws 'HpkeError'.
 seal :: ContextS -> AAD -> PlainText -> IO CipherText
 seal ContextS{..} aad pt = do
     seqI <- readIORef seqRefS
@@ -78,6 +79,7 @@ seal ContextS{..} aad pt = do
         Left err -> E.throwIO err
 
 -- | Decryption.
+--   This throws 'HpkeError'.
 open
     :: ContextR -> AAD -> CipherText -> IO PlainText
 open ContextR{..} aad ct = do

@@ -20,6 +20,7 @@ import Crypto.HPKE.KeySchedule
 import Crypto.HPKE.Types
 
 -- | Setting up base mode for a sender.
+--   This throws 'HpkeError'.
 setupBaseS
     :: KEM_ID
     -> KDF_ID
@@ -31,6 +32,7 @@ setupBaseS kem_id kdf_id aead_id pkRm info =
     setupBS defaultHPKEMap ModeBase kem_id kdf_id aead_id pkRm info "" ""
 
 -- | Setting up base mode for a sender with its key pair.
+--   This throws 'HpkeError'.
 setupBaseS'
     :: KEM_ID
     -> KDF_ID
@@ -44,6 +46,7 @@ setupBaseS' kem_id kdf_id aead_id skEm pkEm pkRm info =
     setupBS' defaultHPKEMap ModeBase kem_id kdf_id aead_id skEm pkEm pkRm info "" ""
 
 -- | Setting up base mode for a receiver with its key pair.
+--   This throws 'HpkeError'.
 setupBaseR
     :: KEM_ID
     -> KDF_ID
@@ -59,6 +62,7 @@ setupBaseR kem_id kdf_id aead_id skRm pkRm enc info =
 ----------------------------------------------------------------
 
 -- | Setting up PSK mode for a sender.
+--   This throws 'HpkeError'.
 setupPSKS
     :: KEM_ID
     -> KDF_ID
@@ -71,6 +75,7 @@ setupPSKS
 setupPSKS = setupBS defaultHPKEMap ModePsk
 
 -- | Setting up PSK mode for a sender with its key pair.
+--   This throws 'HpkeError'.
 setupPSKS'
     :: KEM_ID
     -> KDF_ID
@@ -85,6 +90,7 @@ setupPSKS'
 setupPSKS' = setupBS' defaultHPKEMap ModePsk
 
 -- | Setting up PSK mode for a receiver with its key pair.
+--   This throws 'HpkeError'.
 setupPSKR
     :: KEM_ID
     -> KDF_ID
