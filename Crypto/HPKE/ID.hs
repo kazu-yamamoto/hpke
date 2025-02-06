@@ -3,12 +3,12 @@
 
 module Crypto.HPKE.ID (
     AEAD_ID (AES_128_GCM, AES_256_GCM, ChaCha20Poly1305, ..),
-    AeadCipher (..),
-    defaultCipherMap,
+    AEADCipher (..),
+    defaultAEADMap,
     --
     KDF_ID (HKDF_SHA256, HKDF_SHA384, HKDF_SHA512, ..),
     KDFHash (..),
-    defaultKdfMap,
+    defaultKDFMap,
     --
     KEM_ID (
         DHKEM_P256_HKDF_SHA256,
@@ -18,7 +18,7 @@ module Crypto.HPKE.ID (
         DHKEM_X448_HKDF_SHA512,
         ..
     ),
-    defaultKemMap,
+    defaultKEMMap,
     KEMGroup (..),
     --
     HPKEMap (..),
@@ -73,14 +73,16 @@ chacha :: Proxy ChaCha20Poly1305
 chacha  = Proxy :: Proxy ChaCha20Poly1305
 {- FOURMOLU_ENABLE -}
 
-data AeadCipher = forall a. Aead a => AeadCipher (Proxy a)
+data AEADCipher = forall a. Aead a => AEADCipher (Proxy a)
 
-defaultCipherMap :: [(AEAD_ID, AeadCipher)]
-defaultCipherMap =
-    [ (AES_128_GCM, AeadCipher aes128)
-    , (AES_256_GCM, AeadCipher aes256)
-    , (ChaCha20Poly1305, AeadCipher chacha)
+{- FOURMOLU_DISABLE -}
+defaultAEADMap :: [(AEAD_ID, AEADCipher)]
+defaultAEADMap =
+    [ (AES_128_GCM,      AEADCipher aes128)
+    , (AES_256_GCM,      AEADCipher aes256)
+    , (ChaCha20Poly1305, AEADCipher chacha)
     ]
+{- FOURMOLU_ENABLE -}
 
 ----------------------------------------------------------------
 
@@ -104,8 +106,8 @@ instance Show KDF_ID where
 
 data KDFHash = forall h. (HashAlgorithm h, KDF h) => KDFHash h
 
-defaultKdfMap :: [(KDF_ID, KDFHash)]
-defaultKdfMap =
+defaultKDFMap :: [(KDF_ID, KDFHash)]
+defaultKDFMap =
     [ (HKDF_SHA256, KDFHash SHA256)
     , (HKDF_SHA384, KDFHash SHA384)
     , (HKDF_SHA512, KDFHash SHA512)
@@ -155,8 +157,8 @@ x448    = Proxy :: Proxy Curve_X448
 data KEMGroup
     = forall c. (EllipticCurve c, EllipticCurveDH c, DeserialSK c) => KEMGroup (Proxy c)
 
-defaultKemMap :: [(KEM_ID, (KEMGroup, KDFHash))]
-defaultKemMap =
+defaultKEMMap :: [(KEM_ID, (KEMGroup, KDFHash))]
+defaultKEMMap =
     [ (DHKEM_P256_HKDF_SHA256,   (KEMGroup p256,   KDFHash SHA256))
     , (DHKEM_P384_HKDF_SHA384,   (KEMGroup p384,   KDFHash SHA384))
     , (DHKEM_P512_HKDF_SHA512,   (KEMGroup p521,   KDFHash SHA512))
@@ -170,13 +172,13 @@ defaultKemMap =
 data HPKEMap = HPKEMap
     { kemMap :: [(KEM_ID, (KEMGroup, KDFHash))]
     , kdfMap :: [(KDF_ID, KDFHash)]
-    , cipherMap :: [(AEAD_ID, AeadCipher)]
+    , cipherMap :: [(AEAD_ID, AEADCipher)]
     }
 
 defaultHPKEMap :: HPKEMap
 defaultHPKEMap =
     HPKEMap
-        { kemMap = defaultKemMap
-        , kdfMap = defaultKdfMap
-        , cipherMap = defaultCipherMap
+        { kemMap = defaultKEMMap
+        , kdfMap = defaultKDFMap
+        , cipherMap = defaultAEADMap
         }

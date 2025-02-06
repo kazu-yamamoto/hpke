@@ -179,7 +179,7 @@ look
     -> KEM_ID
     -> KDF_ID
     -> AEAD_ID
-    -> Either HpkeError ((KEMGroup, KDFHash), KDFHash, AeadCipher)
+    -> Either HpkeError ((KEMGroup, KDFHash), KDFHash, AEADCipher)
 look HPKEMap{..} kem_id kdf_id aead_id = do
     k <- lookupE kem_id kemMap
     h <- lookupE kdf_id kdfMap
@@ -206,7 +206,7 @@ withHpkeMap
 withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id body =
     case look hpkeMap kem_id kdf_id aead_id of
         Left err -> E.throwIO err
-        Right ((group, KDFHash h), KDFHash h', AeadCipher c) -> do
+        Right ((group, KDFHash h), KDFHash h', AEADCipher c) -> do
             let suite = suiteKEM kem_id
                 derive = extractAndExpand h suite
                 nk = nK c

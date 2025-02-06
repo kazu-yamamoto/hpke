@@ -42,12 +42,14 @@ import Crypto.HPKE.Types
 type PublicKey curve = Point curve
 type SecretKey curve = Scalar curve
 
+{- FOURMOLU_DISABLE -}
 data Env curve = Env
     { envSecretKey :: SecretKey curve
     , envPublicKey :: PublicKey curve
-    , envProxy :: Proxy curve
-    , envDerive :: KeyDeriveFunction
+    , envProxy     :: Proxy curve
+    , envDerive    :: KeyDeriveFunction
     }
+{- FOURMOLU_ENABLE -}
 
 ----------------------------------------------------------------
 
@@ -80,7 +82,7 @@ encapEnv
     -> EncodedPublicKey
     -> Encap
 encapEnv proxy derive skRm pkRm enc = do
-    env <- newEnvP proxy derive skRm pkRm
+    env <- newEnvDeserialize proxy derive skRm pkRm
     encap env enc
 
 ----------------------------------------------------------------
@@ -105,7 +107,7 @@ decapEnv
     -> EncodedPublicKey
     -> Decap
 decapEnv proxy derive skRm pkRm enc = do
-    env <- newEnvP proxy derive skRm pkRm
+    env <- newEnvDeserialize proxy derive skRm pkRm
     decap env enc
 
 ----------------------------------------------------------------
@@ -127,6 +129,8 @@ newEnv derive skR pkR =
   where
     proxy = Proxy :: Proxy curve
 
+----------------------------------------------------------------
+
 genEnv
     :: EllipticCurve curve
     => Proxy curve -> KeyDeriveFunction -> IO (Env curve)
@@ -137,14 +141,14 @@ genEnv proxy derive = do
 
 ----------------------------------------------------------------
 
-newEnvP
+newEnvDeserialize
     :: (EllipticCurve curve, DeserialSK curve)
     => Proxy curve
     -> KeyDeriveFunction
     -> EncodedSecretKey
     -> EncodedPublicKey
     -> Either HpkeError (Env curve)
-newEnvP proxy derive skRm pkRm = do
+newEnvDeserialize proxy derive skRm pkRm = do
     skR <- deserializeSK proxy skRm
     pkR <- deserializePublicKey proxy pkRm
     return $ newEnv derive skR pkR
