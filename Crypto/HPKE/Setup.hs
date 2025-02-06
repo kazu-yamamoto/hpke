@@ -8,6 +8,8 @@ module Crypto.HPKE.Setup (
     setupPSKS,
     setupPSKS',
     setupPSKR,
+    setupBS,
+    setupBR,
 ) where
 
 import qualified Control.Exception as E

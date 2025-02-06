@@ -9,12 +9,10 @@ module Crypto.HPKE (
 
     -- ** Base
     setupBaseS,
-    setupBaseS',
     setupBaseR,
 
     -- ** PSK setup
     setupPSKS,
-    setupPSKS',
     setupPSKR,
 
     -- * Encryption and Decyption
