@@ -112,7 +112,7 @@ setupBS
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
 setupBS hpkeMap mode kem_id kdf_id aead_id pkRm info psk psk_id =
-    withLookup hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
+    withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
         encap <- encapGen group derive
         case encap pkRm of
             Left err -> E.throwIO err
@@ -135,7 +135,7 @@ setupBS'
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
 setupBS' hpkeMap mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id =
-    withLookup hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
+    withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule seal' _ -> do
         let encap = encapEnv group derive skEm pkEm
         case encap pkRm of
             Left err -> E.throwIO err
@@ -158,7 +158,7 @@ setupBR
     -> PSK_ID
     -> IO ContextR
 setupBR hpkeMap mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id =
-    withLookup hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule _ open' -> do
+    withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id $ \(KEMGroup group) derive schedule _ open' -> do
         let decap = decapEnv group derive skRm pkRm
         case decap enc of
             Left err -> E.throwIO err
@@ -180,7 +180,7 @@ look HPKEMap{..} kem_id kdf_id aead_id = do
     a <- lookupE aead_id cipherMap
     return (k, h, a)
 
-withLookup
+withHpkeMap
     :: HPKEMap
     -> Mode
     -> KEM_ID
@@ -197,7 +197,7 @@ withLookup
          -> IO a
        )
     -> IO a
-withLookup hpkeMap mode kem_id kdf_id aead_id info psk psk_id body =
+withHpkeMap hpkeMap mode kem_id kdf_id aead_id info psk psk_id body =
     case look hpkeMap kem_id kdf_id aead_id of
         Left err -> E.throwIO err
         Right ((group, KDFHash h), KDFHash h', AeadCipher c) -> do
