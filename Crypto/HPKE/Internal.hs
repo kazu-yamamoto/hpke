@@ -20,7 +20,6 @@ module Crypto.HPKE.Internal (
     SecretKey,
     Seal,
     Open,
-    Key,
     Nonce,
     Suite,
     Salt,

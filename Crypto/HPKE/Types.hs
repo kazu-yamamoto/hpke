@@ -73,9 +73,11 @@ instance Exception HPKEError
 
 ----------------------------------------------------------------
 
+-- | Encryption key.
+type Key = ByteString
+
 type Salt = ByteString
 type IKM = ByteString -- Input Keying Material
-type Key = ByteString
 type Suite = ByteString
 type Label = ByteString
 type KeyDeriveFunction = SharedSecret -> ByteString -> Key

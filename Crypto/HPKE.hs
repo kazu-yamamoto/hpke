@@ -35,6 +35,7 @@ module Crypto.HPKE (
     AAD,
     PlainText,
     CipherText,
+    Key,
 
     -- * Error
     HPKEError (..),
