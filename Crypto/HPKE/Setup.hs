@@ -4,13 +4,10 @@
 
 module Crypto.HPKE.Setup (
     setupBaseS,
-    setupBaseS',
     setupBaseR,
     setupPSKS,
-    setupPSKS',
     setupPSKR,
     setupS,
-    setupS',
     setupR,
 ) where
 
@@ -30,24 +27,13 @@ setupBaseS
     :: KEM_ID
     -> KDF_ID
     -> AEAD_ID
-    -> EncodedPublicKey
-    -> Info
-    -> IO (EncodedPublicKey, ContextS)
-setupBaseS kem_id kdf_id aead_id pkRm info =
-    setupS defaultHPKEMap ModeBase kem_id kdf_id aead_id pkRm info "" ""
-
--- | Setting up base mode for a sender with its key pair.
---   This throws 'HPKEError'.
-setupBaseS'
-    :: KEM_ID
-    -> KDF_ID
-    -> AEAD_ID
-    -> EncodedSecretKey -- mine
+    -> Maybe EncodedSecretKey -- mine, gen if Nothing
+    -> Maybe EncodedSecretKey -- mine, auth if Just
     -> EncodedPublicKey -- peer
     -> Info
     -> IO (EncodedPublicKey, ContextS)
-setupBaseS' kem_id kdf_id aead_id skEm pkRm info =
-    setupS' defaultHPKEMap ModeBase kem_id kdf_id aead_id skEm pkRm info "" ""
+setupBaseS kem_id kdf_id aead_id mskEm mskSm pkRm info =
+    setupS defaultHPKEMap ModeBase kem_id kdf_id aead_id mskEm mskSm pkRm info "" ""
 
 -- | Setting up base mode for a receiver with its key pair.
 --   This throws 'HPKEError'.
@@ -56,11 +42,12 @@ setupBaseR
     -> KDF_ID
     -> AEAD_ID
     -> EncodedSecretKey -- mine
+    -> Maybe EncodedSecretKey -- mine, auth if Just
     -> EncodedPublicKey -- peer
     -> Info
     -> IO ContextR
-setupBaseR kem_id kdf_id aead_id skRm enc info =
-    setupR defaultHPKEMap ModeBase kem_id kdf_id aead_id skRm enc info "" ""
+setupBaseR kem_id kdf_id aead_id skRm mskSm enc info =
+    setupR defaultHPKEMap ModeBase kem_id kdf_id aead_id skRm mskSm enc info "" ""
 
 ----------------------------------------------------------------
 
@@ -70,26 +57,14 @@ setupPSKS
     :: KEM_ID
     -> KDF_ID
     -> AEAD_ID
-    -> EncodedPublicKey
-    -> Info
-    -> PSK
-    -> PSK_ID
-    -> IO (EncodedPublicKey, ContextS)
-setupPSKS = setupS defaultHPKEMap ModePsk
-
--- | Setting up PSK mode for a sender with its key pair.
---   This throws 'HPKEError'.
-setupPSKS'
-    :: KEM_ID
-    -> KDF_ID
-    -> AEAD_ID
-    -> EncodedSecretKey -- mine
+    -> Maybe EncodedSecretKey -- mine, gen if Nothing
+    -> Maybe EncodedSecretKey -- mine, auth if Just
     -> EncodedPublicKey -- peer
     -> Info
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupPSKS' = setupS' defaultHPKEMap ModePsk
+setupPSKS = setupS defaultHPKEMap ModePsk
 
 -- | Setting up PSK mode for a receiver with its key pair.
 --   This throws 'HPKEError'.
@@ -98,6 +73,7 @@ setupPSKR
     -> KDF_ID
     -> AEAD_ID
     -> EncodedSecretKey -- mine
+    -> Maybe EncodedSecretKey -- mine, auth if Just
     -> EncodedPublicKey -- peer
     -> Info
     -> PSK
@@ -113,44 +89,21 @@ setupS
     -> KEM_ID
     -> KDF_ID
     -> AEAD_ID
-    -> EncodedPublicKey
-    -> Info
-    -> PSK
-    -> PSK_ID
-    -> IO (EncodedPublicKey, ContextS)
-setupS hpkeMap mode kem_id kdf_id aead_id pkRm info psk psk_id = do
-    verifyPSKInput mode psk psk_id
-    let r = look hpkeMap kem_id kdf_id aead_id
-    throwOnError r $ \((KEMGroup group, KDFHash h), KDFHash h', AEADCipher c) -> do
-        let derive = extractAndExpand h $ suiteKEM kem_id
-        encap <- encapGen group derive Nothing
-        throwOnError (encap pkRm) $ \(shared_secret, enc) -> do
-            let (nk, nn, seal', _) = aeadParams c
-                suite' = suiteHPKE kem_id kdf_id aead_id
-                keys = keySchedule h' suite' nk nn mode info psk psk_id shared_secret
-            throwOnError keys $ \(key, nonce, _, prk) -> do
-                let expand' = labeledExpand suite' prk "sec"
-                ctx <- newContextS key nonce seal' expand'
-                return (enc, ctx)
-
-setupS'
-    :: HPKEMap
-    -> Mode
-    -> KEM_ID
-    -> KDF_ID
-    -> AEAD_ID
-    -> EncodedSecretKey -- mine
+    -> Maybe EncodedSecretKey -- mine
+    -> Maybe EncodedSecretKey -- mine (auth)
     -> EncodedPublicKey -- peer
     -> Info
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupS' hpkeMap mode kem_id kdf_id aead_id skEm pkRm info psk psk_id = do
+setupS hpkeMap mode kem_id kdf_id aead_id mskEm mskSm pkRm info psk psk_id = do
     verifyPSKInput mode psk psk_id
     let r = look hpkeMap kem_id kdf_id aead_id
     throwOnError r $ \((KEMGroup group, KDFHash h), KDFHash h', AEADCipher c) -> do
         let derive = extractAndExpand h $ suiteKEM kem_id
-            encap = encapEnv group derive skEm Nothing
+        encap <- case mskEm of
+            Nothing -> encapGen group derive mskSm
+            Just skEm -> return $ encapEnv group derive skEm mskSm
         throwOnError (encap pkRm) $ \(shared_secret, enc) -> do
             let (nk, nn, seal', _) = aeadParams c
                 suite' = suiteHPKE kem_id kdf_id aead_id
@@ -167,17 +120,18 @@ setupR
     -> KDF_ID
     -> AEAD_ID
     -> EncodedSecretKey -- mine
+    -> Maybe EncodedSecretKey -- mine
     -> EncodedPublicKey -- peer
     -> Info
     -> PSK
     -> PSK_ID
     -> IO ContextR
-setupR hpkeMap mode kem_id kdf_id aead_id skRm enc info psk psk_id = do
+setupR hpkeMap mode kem_id kdf_id aead_id skRm mskSm enc info psk psk_id = do
     verifyPSKInput mode psk psk_id
     let r = look hpkeMap kem_id kdf_id aead_id
     throwOnError r $ \((KEMGroup group, KDFHash h), KDFHash h', AEADCipher c) -> do
         let derive = extractAndExpand h $ suiteKEM kem_id
-            decap = decapEnv group derive skRm Nothing
+            decap = decapEnv group derive skRm mskSm
         throwOnError (decap enc) $ \shared_secret -> do
             let (nk, nn, _, open') = aeadParams c
                 suite' = suiteHPKE kem_id kdf_id aead_id

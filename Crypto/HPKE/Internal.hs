@@ -1,13 +1,8 @@
 module Crypto.HPKE.Internal (
-    -- * For test purposes
-    setupBaseS',
-    setupPSKS',
-
     -- * Extensible map
     HPKEMap (..),
     defaultHPKEMap,
     setupS,
-    setupS',
     setupR,
 
     -- * Unified types

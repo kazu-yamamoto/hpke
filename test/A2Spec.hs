@@ -6,7 +6,6 @@ import Data.ByteString ()
 import Test.Hspec
 
 import Crypto.HPKE
-import Crypto.HPKE.Internal
 
 spec :: Spec
 spec = do
@@ -27,11 +26,12 @@ spec = do
                     "\x80\x57\x99\x1e\xef\x8f\x1f\x1a\xf1\x8f\x4a\x94\x91\xd1\x6a\x1c\xe3\x33\xf6\x95\xd4\xdb\x8e\x38\xda\x75\x97\x5c\x44\x78\xe0\xfb"
                         :: EncodedSecretKey
             (enc, ctxS) <-
-                setupBaseS'
+                setupBaseS
                     DHKEM_X25519_HKDF_SHA256
                     HKDF_SHA256
                     ChaCha20Poly1305
-                    skEm
+                    (Just skEm)
+                    Nothing
                     pkRm
                     info
             ctxR <-
@@ -40,6 +40,7 @@ spec = do
                     HKDF_SHA256
                     ChaCha20Poly1305
                     skRm
+                    Nothing
                     pkEm
                     info
             enc `shouldBe` pkEm
@@ -79,11 +80,12 @@ spec = do
                 psk_id =
                     "\x45\x6e\x6e\x79\x6e\x20\x44\x75\x72\x69\x6e\x20\x61\x72\x61\x6e\x20\x4d\x6f\x72\x69\x61"
             (enc, ctxS) <-
-                setupPSKS'
+                setupPSKS
                     DHKEM_X25519_HKDF_SHA256
                     HKDF_SHA256
                     ChaCha20Poly1305
-                    skEm
+                    (Just skEm)
+                    Nothing
                     pkRm
                     info
                     psk
@@ -94,6 +96,7 @@ spec = do
                     HKDF_SHA256
                     ChaCha20Poly1305
                     skRm
+                    Nothing
                     pkEm
                     info
                     psk

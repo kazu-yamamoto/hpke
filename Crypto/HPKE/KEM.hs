@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -28,10 +29,17 @@ encap
 encap Env{..} enc0@(EncodedPublicKey pkRm) = do
     pkR <- deserializePublicKey envProxy enc0
     let skE = envSecretKey
-    dh <- ecdh' envProxy skE pkR $ EncapError "encap"
+    dh0 <- ecdh' envProxy skE pkR $ EncapError "encap"
+    (dh, pkSm) <- case envAuthKey of
+        Nothing -> return (dh0, "")
+        Just skS -> do
+            let pkS = scalarToPoint envProxy skS
+            dh1 <- ecdh' envProxy skS pkR $ EncapError "encap"
+            let EncodedPublicKey pk = serializePublicKey envProxy pkS
+            return (dh0 <> dh1, pk)
     let pkE = scalarToPoint envProxy skE
     let enc@(EncodedPublicKey pkEm) = serializePublicKey envProxy pkE
-        kem_context = pkEm <> pkRm
+        kem_context = pkEm <> pkRm <> pkSm
         shared_secret = SharedSecret $ convert $ envDerive dh kem_context
     return (shared_secret, enc)
 
@@ -70,10 +78,18 @@ decap
 decap Env{..} enc@(EncodedPublicKey pkEm) = do
     pkE <- deserializePublicKey envProxy enc
     let skR = envSecretKey
-    dh <- ecdh' envProxy skR pkE $ DecapError "decap"
+    dh0 <- ecdh' envProxy skR pkE $ DecapError "decap"
+    (dh, pkSm) <- case envAuthKey of
+        Nothing -> return (dh0, "")
+        Just skS -> do
+            let pkS = scalarToPoint envProxy skS
+            dh1 <- ecdh' envProxy skR pkS $ EncapError "decap"
+            let EncodedPublicKey pk = serializePublicKey envProxy pkS
+            return (dh0 <> dh1, pk)
+
     let pkR = scalarToPoint envProxy skR
     let EncodedPublicKey pkRm = serializePublicKey envProxy pkR
-        kem_context = pkEm <> pkRm
+        kem_context = pkEm <> pkRm <> pkSm
         shared_secret = SharedSecret $ convert $ envDerive dh kem_context
     return shared_secret
 

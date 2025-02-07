@@ -6,7 +6,6 @@ import Data.ByteString ()
 import Test.Hspec
 
 import Crypto.HPKE
-import Crypto.HPKE.Internal
 
 spec :: Spec
 spec = do
@@ -27,9 +26,23 @@ spec = do
                     "\x46\x12\xc5\x50\x26\x3f\xc8\xad\x58\x37\x5d\xf3\xf5\x57\xaa\xc5\x31\xd2\x68\x50\x90\x3e\x55\xa9\xf2\x3f\x21\xd8\x53\x4e\x8a\xc8"
                         :: EncodedSecretKey
             (enc, ctxS) <-
-                setupBaseS' DHKEM_X25519_HKDF_SHA256 HKDF_SHA256 AES_128_GCM skEm pkRm info
+                setupBaseS
+                    DHKEM_X25519_HKDF_SHA256
+                    HKDF_SHA256
+                    AES_128_GCM
+                    (Just skEm)
+                    Nothing
+                    pkRm
+                    info
             ctxR <-
-                setupBaseR DHKEM_X25519_HKDF_SHA256 HKDF_SHA256 AES_128_GCM skRm pkEm info
+                setupBaseR
+                    DHKEM_X25519_HKDF_SHA256
+                    HKDF_SHA256
+                    AES_128_GCM
+                    skRm
+                    Nothing
+                    pkEm
+                    info
             enc `shouldBe` pkEm
             let pt = "Beauty is truth, truth beauty"
                 aad0 = "\x43\x6f\x75\x6e\x74\x2d\x30"
@@ -77,11 +90,12 @@ spec = do
                 psk_id =
                     "\x45\x6e\x6e\x79\x6e\x20\x44\x75\x72\x69\x6e\x20\x61\x72\x61\x6e\x20\x4d\x6f\x72\x69\x61"
             (enc, ctxS) <-
-                setupPSKS'
+                setupPSKS
                     DHKEM_X25519_HKDF_SHA256
                     HKDF_SHA256
                     AES_128_GCM
-                    skEm
+                    (Just skEm)
+                    Nothing
                     pkRm
                     info
                     psk
@@ -92,6 +106,7 @@ spec = do
                     HKDF_SHA256
                     AES_128_GCM
                     skRm
+                    Nothing
                     pkEm
                     info
                     psk
