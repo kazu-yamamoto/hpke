@@ -44,6 +44,7 @@ test-suite spec
     other-modules:      A1Spec
                         A2Spec
                         A3Spec
+                        A4Spec
                         Test
 
     default-language:   Haskell2010
