@@ -8,6 +8,7 @@ module Crypto.HPKE.KEM (
 )
 where
 
+import qualified Control.Exception as E
 import Crypto.ECC (
     EllipticCurve (..),
     EllipticCurveDH (..),
@@ -38,9 +39,15 @@ encapGen
     :: (EllipticCurve group, EllipticCurveDH group)
     => Proxy group
     -> KeyDeriveFunction
+    -> Maybe EncodedSecretKey
     -> IO Encap
-encapGen proxy derive = do
-    env <- genEnv proxy derive
+encapGen proxy derive mskSm = do
+    mskS <- case mskSm of
+        Nothing -> return $ Nothing
+        Just skSm -> case deserializeSecretKey proxy skSm of
+            Left err -> E.throwIO err
+            Right x -> return $ Just x
+    env <- genEnv proxy derive mskS
     return $ encap env
 
 encapEnv
@@ -48,9 +55,10 @@ encapEnv
     => Proxy group
     -> KeyDeriveFunction
     -> EncodedSecretKey
+    -> Maybe EncodedSecretKey
     -> Encap
-encapEnv proxy derive skRm enc = do
-    env <- newEnvDeserialize proxy derive skRm
+encapEnv proxy derive skRm skSm enc = do
+    env <- newEnvDeserialize proxy derive skRm skSm
     encap env enc
 
 ----------------------------------------------------------------
@@ -74,9 +82,10 @@ decapEnv
     => Proxy group
     -> KeyDeriveFunction
     -> EncodedSecretKey
+    -> Maybe EncodedSecretKey
     -> Decap
-decapEnv proxy derive skRm enc = do
-    env <- newEnvDeserialize proxy derive skRm
+decapEnv proxy derive skRm mskSm enc = do
+    env <- newEnvDeserialize proxy derive skRm mskSm
     decap env enc
 
 ----------------------------------------------------------------
@@ -84,6 +93,7 @@ decapEnv proxy derive skRm enc = do
 {- FOURMOLU_DISABLE -}
 data Env group = Env
     { envSecretKey :: SecretKey group
+    , envAuthKey   :: Maybe (SecretKey group)
     , envProxy     :: Proxy group
     , envDerive    :: KeyDeriveFunction
     }
@@ -96,10 +106,12 @@ newEnv
      . EllipticCurve group
     => KeyDeriveFunction
     -> SecretKey group
+    -> Maybe (SecretKey group)
     -> Env group
-newEnv derive skR =
+newEnv derive skR mskS =
     Env
         { envSecretKey = skR
+        , envAuthKey = mskS
         , envProxy = proxy
         , envDerive = derive
         }
@@ -110,11 +122,14 @@ newEnv derive skR =
 
 genEnv
     :: EllipticCurve group
-    => Proxy group -> KeyDeriveFunction -> IO (Env group)
-genEnv proxy derive = do
+    => Proxy group
+    -> KeyDeriveFunction
+    -> Maybe (SecretKey group)
+    -> IO (Env group)
+genEnv proxy derive mskS = do
     gen <- drgNew
     let (KeyPair _ sk, _) = withDRG gen $ curveGenerateKeyPair proxy
-    return $ newEnv derive sk
+    return $ newEnv derive sk mskS
 
 ----------------------------------------------------------------
 
@@ -123,10 +138,14 @@ newEnvDeserialize
     => Proxy group
     -> KeyDeriveFunction
     -> EncodedSecretKey
+    -> Maybe EncodedSecretKey
     -> Either HPKEError (Env group)
-newEnvDeserialize proxy derive skRm = do
+newEnvDeserialize proxy derive skRm mskSm = do
     skR <- deserializeSecretKey proxy skRm
-    return $ newEnv derive skR
+    mskS <- case mskSm of
+        Nothing -> Right $ Nothing
+        Just skSm -> Just <$> deserializeSecretKey proxy skSm
+    return $ newEnv derive skR mskS
 
 ----------------------------------------------------------------
 

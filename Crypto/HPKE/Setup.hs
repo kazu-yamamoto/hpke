@@ -123,7 +123,7 @@ setupS hpkeMap mode kem_id kdf_id aead_id pkRm info psk psk_id = do
     let r = look hpkeMap kem_id kdf_id aead_id
     throwOnError r $ \((KEMGroup group, KDFHash h), KDFHash h', AEADCipher c) -> do
         let derive = extractAndExpand h $ suiteKEM kem_id
-        encap <- encapGen group derive
+        encap <- encapGen group derive Nothing
         throwOnError (encap pkRm) $ \(shared_secret, enc) -> do
             let (nk, nn, seal', _) = aeadParams c
                 suite' = suiteHPKE kem_id kdf_id aead_id
@@ -150,7 +150,7 @@ setupS' hpkeMap mode kem_id kdf_id aead_id skEm pkRm info psk psk_id = do
     let r = look hpkeMap kem_id kdf_id aead_id
     throwOnError r $ \((KEMGroup group, KDFHash h), KDFHash h', AEADCipher c) -> do
         let derive = extractAndExpand h $ suiteKEM kem_id
-            encap = encapEnv group derive skEm
+            encap = encapEnv group derive skEm Nothing
         throwOnError (encap pkRm) $ \(shared_secret, enc) -> do
             let (nk, nn, seal', _) = aeadParams c
                 suite' = suiteHPKE kem_id kdf_id aead_id
@@ -177,7 +177,7 @@ setupR hpkeMap mode kem_id kdf_id aead_id skRm enc info psk psk_id = do
     let r = look hpkeMap kem_id kdf_id aead_id
     throwOnError r $ \((KEMGroup group, KDFHash h), KDFHash h', AEADCipher c) -> do
         let derive = extractAndExpand h $ suiteKEM kem_id
-            decap = decapEnv group derive skRm
+            decap = decapEnv group derive skRm Nothing
         throwOnError (decap enc) $ \shared_secret -> do
             let (nk, nn, _, open') = aeadParams c
                 suite' = suiteHPKE kem_id kdf_id aead_id
