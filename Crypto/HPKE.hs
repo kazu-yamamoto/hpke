@@ -7,11 +7,11 @@ module Crypto.HPKE (
 
     -- * Setup
 
-    -- ** Base
+    -- ** For mode_base and mode_auth
     setupBaseS,
     setupBaseR,
 
-    -- ** PSK setup
+    -- ** For mode_psk and mode_auth_psk
     setupPSKS,
     setupPSKR,
 

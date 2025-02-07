@@ -21,15 +21,19 @@ import Crypto.HPKE.KEM
 import Crypto.HPKE.KeySchedule
 import Crypto.HPKE.Types
 
--- | Setting up base mode for a sender.
+-- | Setting up base/auth mode for a sender.
 --   This throws 'HPKEError'.
 setupBaseS
     :: KEM_ID
     -> KDF_ID
     -> AEAD_ID
-    -> Maybe EncodedSecretKey -- mine, gen if Nothing
-    -> Maybe EncodedSecretKey -- mine, auth if Just
-    -> EncodedPublicKey -- peer
+    -> Maybe EncodedSecretKey
+    -- ^ My ephemeral secret key. Automatically generated if 'Nothing'
+    -> Maybe EncodedSecretKey
+    -- ^ My secret key for authentication.
+    --   'mode_base' is used if 'Nothing'. 'base_auth' is used, otherwise.
+    -> EncodedPublicKey
+    -- ^ Peer's public key.
     -> Info
     -> IO (EncodedPublicKey, ContextS)
 setupBaseS kem_id kdf_id aead_id mskEm mskSm pkRm info =
@@ -39,15 +43,19 @@ setupBaseS kem_id kdf_id aead_id mskEm mskSm pkRm info =
         Nothing -> ModeBase
         _ -> ModeAuth
 
--- | Setting up base mode for a receiver with its key pair.
+-- | Setting up base/auth mode for a receiver with its key pair.
 --   This throws 'HPKEError'.
 setupBaseR
     :: KEM_ID
     -> KDF_ID
     -> AEAD_ID
-    -> EncodedSecretKey -- mine
-    -> Maybe EncodedSecretKey -- mine, auth if Just
-    -> EncodedPublicKey -- peer
+    -> EncodedSecretKey
+    -- ^ My secret key
+    -> Maybe EncodedSecretKey
+    -- ^ My secret key for authentication.
+    --   'mode_base' is used if 'Nothing'. 'base_auth' is used, otherwise.
+    -> EncodedPublicKey
+    -- ^ Peer's public key.
     -> Info
     -> IO ContextR
 setupBaseR kem_id kdf_id aead_id skRm mskSm enc info =
@@ -59,15 +67,19 @@ setupBaseR kem_id kdf_id aead_id skRm mskSm enc info =
 
 ----------------------------------------------------------------
 
--- | Setting up PSK mode for a sender.
+-- | Setting up psk/auth_psk mode for a sender.
 --   This throws 'HPKEError'.
 setupPSKS
     :: KEM_ID
     -> KDF_ID
     -> AEAD_ID
-    -> Maybe EncodedSecretKey -- mine, gen if Nothing
-    -> Maybe EncodedSecretKey -- mine, auth if Just
-    -> EncodedPublicKey -- peer
+    -> Maybe EncodedSecretKey
+    -- ^ My ephemeral secret key. Automatically generated if 'Nothing'
+    -> Maybe EncodedSecretKey
+    -- ^ My secret key for authentication.
+    --   'mode_base' is used if 'Nothing'. 'base_auth' is used, otherwise.
+    -> EncodedPublicKey
+    -- ^ Peer's public key.
     -> Info
     -> PSK
     -> PSK_ID
@@ -79,15 +91,19 @@ setupPSKS kem_id kdf_id aead_id skRm mskSm =
         Nothing -> ModePsk
         _ -> ModeAuthPsk
 
--- | Setting up PSK mode for a receiver with its key pair.
+-- | Setting up psk/auth_psk mode for a receiver with its key pair.
 --   This throws 'HPKEError'.
 setupPSKR
     :: KEM_ID
     -> KDF_ID
     -> AEAD_ID
-    -> EncodedSecretKey -- mine
-    -> Maybe EncodedSecretKey -- mine, auth if Just
-    -> EncodedPublicKey -- peer
+    -> EncodedSecretKey
+    -- ^ My secret key
+    -> Maybe EncodedSecretKey
+    -- ^ My secret key for authentication.
+    --   'mode_base' is used if 'Nothing'. 'base_auth' is used, otherwise.
+    -> EncodedPublicKey
+    -- ^ Peer's public key.
     -> Info
     -> PSK
     -> PSK_ID
@@ -107,9 +123,13 @@ setupS
     -> KEM_ID
     -> KDF_ID
     -> AEAD_ID
-    -> Maybe EncodedSecretKey -- mine
-    -> Maybe EncodedSecretKey -- mine (auth)
-    -> EncodedPublicKey -- peer
+    -> Maybe EncodedSecretKey
+    -- ^ My ephemeral secret key. Automatically generated if 'Nothing'
+    -> Maybe EncodedSecretKey
+    -- ^ My secret key for authentication.
+    --   'mode_base' is used if 'Nothing'. 'base_auth' is used, otherwise.
+    -> EncodedPublicKey
+    -- ^ Peer's public key.
     -> Info
     -> PSK
     -> PSK_ID
@@ -137,9 +157,13 @@ setupR
     -> KEM_ID
     -> KDF_ID
     -> AEAD_ID
-    -> EncodedSecretKey -- mine
-    -> Maybe EncodedSecretKey -- mine
-    -> EncodedPublicKey -- peer
+    -> EncodedSecretKey
+    -- ^ My secret key
+    -> Maybe EncodedSecretKey
+    -- ^ My secret key for authentication.
+    --   'mode_base' is used if 'Nothing'. 'base_auth' is used, otherwise.
+    -> EncodedPublicKey
+    -- ^ Peer's public key.
     -> Info
     -> PSK
     -> PSK_ID
