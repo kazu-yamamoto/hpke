@@ -2,252 +2,97 @@
 
 module A2Spec where
 
+import Crypto.HPKE
+import Crypto.HPKE.Internal
 import Data.ByteString ()
 import Test.Hspec
 
-import Crypto.HPKE
+import Test
+
+kem_id :: KEM_ID
+kem_id = DHKEM_X25519_HKDF_SHA256
+kdf_id :: KDF_ID
+kdf_id = HKDF_SHA256
+aead_id :: AEAD_ID
+aead_id = ChaCha20Poly1305
 
 spec :: Spec
 spec = do
-    describe "A.2. DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, ChaCha20Poly1305" $ do
+    describe "A.2.  DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, ChaCha20Poly1305" $ do
         it "A.2.1. Base Setup Information" $ do
-            let info =
-                    "\x4f\x64\x65\x20\x6f\x6e\x20\x61\x20\x47\x72\x65\x63\x69\x61\x6e\x20\x55\x72\x6e"
-                pkEm =
-                    "\x1a\xfa\x08\xd3\xde\xc0\x47\xa6\x43\x88\x51\x63\xf1\x18\x04\x76\xfa\x7d\xdb\x54\xc6\xa8\x02\x9e\xa3\x3f\x95\x79\x6b\xf2\xac\x4a"
-                        :: EncodedPublicKey
-                skEm =
-                    "\xf4\xec\x9b\x33\xb7\x92\xc3\x72\xc1\xd2\xc2\x06\x35\x07\xb6\x84\xef\x92\x5b\x8c\x75\xa4\x2d\xbc\xbf\x57\xd6\x3c\xcd\x38\x16\x00"
-                        :: EncodedSecretKey
-                pkRm =
-                    "\x43\x10\xee\x97\xd8\x8c\xc1\xf0\x88\xa5\x57\x6c\x77\xab\x0c\xf5\xc3\xac\x79\x7f\x3d\x95\x13\x9c\x6c\x84\xb5\x42\x9c\x59\x66\x2a"
-                        :: EncodedPublicKey
-                skRm =
-                    "\x80\x57\x99\x1e\xef\x8f\x1f\x1a\xf1\x8f\x4a\x94\x91\xd1\x6a\x1c\xe3\x33\xf6\x95\xd4\xdb\x8e\x38\xda\x75\x97\x5c\x44\x78\xe0\xfb"
-                        :: EncodedSecretKey
-            (enc, ctxS) <-
-                setupBaseS
-                    DHKEM_X25519_HKDF_SHA256
-                    HKDF_SHA256
-                    ChaCha20Poly1305
-                    (Just skEm)
-                    Nothing
-                    pkRm
-                    info
-            ctxR <-
-                setupBaseR
-                    DHKEM_X25519_HKDF_SHA256
-                    HKDF_SHA256
-                    ChaCha20Poly1305
-                    skRm
-                    Nothing
-                    pkEm
-                    info
-            enc `shouldBe` pkEm
-            let pt = "Beauty is truth, truth beauty"
-                aad0 = "\x43\x6f\x75\x6e\x74\x2d\x30"
-                ct0 =
-                    "\x1c\x52\x50\xd8\x03\x4e\xc2\xb7\x84\xba\x2c\xfd\x69\xdb\xdb\x8a\xf4\x06\xcf\xe3\xff\x93\x8e\x13\x1f\x0d\xef\x8c\x8b\x60\xb4\xdb\x21\x99\x3c\x62\xce\x81\x88\x3d\x2d\xd1\xb5\x1a\x28"
-            ct0' <- seal ctxS aad0 pt
-            ct0' `shouldBe` ct0
-            pt0 <- open ctxR aad0 ct0
-            pt0 `shouldBe` pt
-            let aad1 = "\x43\x6f\x75\x6e\x74\x2d\x31"
-                ct1 =
-                    "\x6b\x53\xc0\x51\xe4\x19\x9c\x51\x8d\xe7\x95\x94\xe1\xc4\xab\x18\xb9\x6f\x08\x15\x49\xd4\x5c\xe0\x15\xbe\x00\x20\x90\xbb\x11\x9e\x85\x28\x53\x37\xcc\x95\xba\x5f\x59\x99\x2d\xc9\x8c"
-            ct1' <- seal ctxS aad1 pt
-            ct1' `shouldBe` ct1
-            pt1 <- open ctxR aad1 ct1
-            pt1 `shouldBe` pt
-
+            runTest
+                ModeBase
+                kem_id
+                kdf_id
+                aead_id
+                "4f6465206f6e2061204772656369616e2055726e"
+                "1afa08d3dec047a643885163f1180476fa7ddb54c6a8029ea33f95796bf2ac4a"
+                "f4ec9b33b792c372c1d2c2063507b684ef925b8c75a42dbcbf57d63ccd381600"
+                "4310ee97d88cc1f088a5576c77ab0cf5c3ac797f3d95139c6c84b5429c59662a"
+                "8057991eef8f1f1af18f4a9491d16a1ce333f695d4db8e38da75975c4478e0fb"
+                ""
+                ""
+                ""
+                "1c5250d8034ec2b784ba2cfd69dbdb8af406cfe3ff938e131f0def8c8b60b4db21993c62ce81883d2dd1b51a28"
+                "6b53c051e4199c518de79594e1c4ab18b96f081549d45ce015be002090bb119e85285337cc95ba5f59992dc98c"
+                "4bbd6243b8bb54cec311fac9df81841b6fd61f56538a775e7c80a9f40160606e"
+                "8c1df14732580e5501b00f82b10a1647b40713191b7c1240ac80e2b68808ba69"
+                "5acb09211139c43b3090489a9da433e8a30ee7188ba8b0a9a1ccf0c229283e53"
         it "A.2.2. PSK Setup Information" $ do
-            let info =
-                    "\x4f\x64\x65\x20\x6f\x6e\x20\x61\x20\x47\x72\x65\x63\x69\x61\x6e\x20\x55\x72\x6e"
-                pkEm =
-                    "\x22\x61\x29\x9c\x3f\x40\xa9\xaf\xc1\x33\xb9\x69\xa9\x7f\x05\xe9\x5b\xe2\xc5\x14\xe5\x4f\x3d\xe2\x6c\xbe\x56\x44\xac\x73\x5b\x04"
-                        :: EncodedPublicKey
-                skEm =
-                    "\x0c\x35\xfd\xf4\x9d\xf7\xaa\x01\xcd\x33\x00\x49\x33\x2c\x40\x41\x1e\xbb\xa3\x6e\x0c\x71\x8e\xbc\x3e\xdf\x58\x45\x79\x5f\x63\x21"
-                        :: EncodedSecretKey
-                pkRm =
-                    "\x13\x64\x0a\xf8\x26\xb7\x22\xfc\x04\xfe\xaa\x4d\xe2\xf2\x8f\xbd\x5e\xcc\x03\x62\x3b\x31\x78\x34\xe7\xff\x41\x20\xdb\xe7\x30\x62"
-                        :: EncodedPublicKey
-                skRm =
-                    "\x77\xd1\x14\xe0\x21\x2b\xe5\x1c\xb1\xd7\x6f\xa9\x9d\xd4\x1c\xfd\x4d\x01\x66\xb0\x8c\xaa\x09\x07\x44\x30\xa6\xc5\x9e\xf1\x78\x79"
-                        :: EncodedSecretKey
-                psk =
-                    "\x02\x47\xfd\x33\xb9\x13\x76\x0f\xa1\xfa\x51\xe1\x89\x2d\x9f\x30\x7f\xbe\x65\xeb\x17\x1e\x81\x32\xc2\xaf\x18\x55\x5a\x73\x8b\x82"
-                psk_id =
-                    "\x45\x6e\x6e\x79\x6e\x20\x44\x75\x72\x69\x6e\x20\x61\x72\x61\x6e\x20\x4d\x6f\x72\x69\x61"
-            (enc, ctxS) <-
-                setupPSKS
-                    DHKEM_X25519_HKDF_SHA256
-                    HKDF_SHA256
-                    ChaCha20Poly1305
-                    (Just skEm)
-                    Nothing
-                    pkRm
-                    info
-                    psk
-                    psk_id
-            ctxR <-
-                setupPSKR
-                    DHKEM_X25519_HKDF_SHA256
-                    HKDF_SHA256
-                    ChaCha20Poly1305
-                    skRm
-                    Nothing
-                    pkEm
-                    info
-                    psk
-                    psk_id
-            enc `shouldBe` pkEm
-            let pt = "Beauty is truth, truth beauty"
-                aad0 = "\x43\x6f\x75\x6e\x74\x2d\x30"
-                ct0 =
-                    "\x4a\x17\x7f\x9c\x0d\x6f\x15\xcf\xdf\x53\x3f\xb6\x5b\xf8\x4a\xec\xdc\x6a\xb1\x6b\x8b\x85\xb4\xcf\x65\xa3\x70\xe0\x7f\xc1\xd7\x8d\x28\xfb\x07\x32\x14\x52\x52\x76\xf4\xa8\x96\x08\xff"
-            ct0' <- seal ctxS aad0 pt
-            ct0' `shouldBe` ct0
-            pt0 <- open ctxR aad0 ct0
-            pt0 `shouldBe` pt
-            let aad1 = "\x43\x6f\x75\x6e\x74\x2d\x31"
-                ct1 =
-                    "\x5c\x3c\xab\xae\x2f\x0b\x3e\x12\x4d\x8d\x86\x4c\x11\x6f\xd8\xf2\x0f\x3f\x56\xfd\xa9\x88\xc3\x57\x3b\x40\xb0\x99\x97\xfd\x6c\x76\x9e\x77\xc8\xed\xa6\xcd\xa4\xf9\x47\xf5\xb7\x04\xa8"
-            ct1' <- seal ctxS aad1 pt
-            ct1' `shouldBe` ct1
-            pt1 <- open ctxR aad1 ct1
-            pt1 `shouldBe` pt
-
+            runTest
+                ModePsk
+                kem_id
+                kdf_id
+                aead_id
+                "4f6465206f6e2061204772656369616e2055726e"
+                "2261299c3f40a9afc133b969a97f05e95be2c514e54f3de26cbe5644ac735b04"
+                "0c35fdf49df7aa01cd330049332c40411ebba36e0c718ebc3edf5845795f6321"
+                "13640af826b722fc04feaa4de2f28fbd5ecc03623b317834e7ff4120dbe73062"
+                "77d114e0212be51cb1d76fa99dd41cfd4d0166b08caa09074430a6c59ef17879"
+                ""
+                "0247fd33b913760fa1fa51e1892d9f307fbe65eb171e8132c2af18555a738b82"
+                "456e6e796e20447572696e206172616e204d6f726961"
+                "4a177f9c0d6f15cfdf533fb65bf84aecdc6ab16b8b85b4cf65a370e07fc1d78d28fb073214525276f4a89608ff"
+                "5c3cabae2f0b3e124d8d864c116fd8f20f3f56fda988c3573b40b09997fd6c769e77c8eda6cda4f947f5b704a8"
+                "813c1bfc516c99076ae0f466671f0ba5ff244a41699f7b2417e4c59d46d39f40"
+                "2745cf3d5bb65c333658732954ee7af49eb895ce77f8022873a62a13c94cb4e1"
+                "ad40e3ae14f21c99bfdebc20ae14ab86f4ca2dc9a4799d200f43a25f99fa78ae"
         it "A.2.3. PSK Setup Information" $ do
-            let info =
-                    "\x4f\x64\x65\x20\x6f\x6e\x20\x61\x20\x47\x72\x65\x63\x69\x61\x6e\x20\x55\x72\x6e"
-                pkEm =
-                    "\xf7\x67\x4c\xc8\xcd\x7b\xaa\x58\x72\xd1\xf3\x3d\xba\xff\xe3\x31\x42\x39\xf6\x19\x7d\xdf\x5d\xed\x17\x46\x76\x0b\xfc\x84\x7e\x0e"
-                        :: EncodedPublicKey
-                skEm =
-                    "\xc9\x46\x19\xe1\xaf\x28\x97\x1c\x8f\xa7\x95\x71\x92\xb7\xe6\x2a\x71\xca\x2d\xcd\xde\x0a\x7c\xc4\xa8\xa9\xe7\x41\xd6\x00\xab\x13"
-                        :: EncodedSecretKey
-                pkRm =
-                    "\x1a\x47\x87\x16\xd6\x3c\xb2\xe1\x67\x86\xee\x93\x00\x44\x86\xdc\x15\x1e\x98\x8b\x34\xb4\x75\x04\x3d\x3e\x01\x75\xbd\xb0\x1c\x44"
-                        :: EncodedPublicKey
-                skRm =
-                    "\x3c\xa2\x2a\x6d\x1c\xda\x1b\xb9\x48\x09\x49\xec\x53\x29\xd3\xbf\x0b\x08\x0c\xa4\xc4\x58\x79\xc9\x5e\xdd\xb5\x5c\x70\xb8\x0b\x82"
-                        :: EncodedSecretKey
-                skSm =
-                    "\x2d\xef\x0c\xb5\x8f\xfc\xf8\x3d\x10\x62\xdd\x08\x5c\x8a\xce\xca\x7f\x4c\x0c\x3f\xd0\x59\x12\xd8\x47\xb6\x1f\x3e\x54\x12\x1f\x05"
-                        :: EncodedSecretKey
-            (enc, ctxS) <-
-                setupBaseS
-                    DHKEM_X25519_HKDF_SHA256
-                    HKDF_SHA256
-                    ChaCha20Poly1305
-                    (Just skEm)
-                    (Just skSm)
-                    pkRm
-                    info
-            ctxR <-
-                setupBaseR
-                    DHKEM_X25519_HKDF_SHA256
-                    HKDF_SHA256
-                    ChaCha20Poly1305
-                    skRm
-                    (Just skSm)
-                    pkEm
-                    info
-            enc `shouldBe` pkEm
-            let pt = "Beauty is truth, truth beauty"
-                aad0 = "\x43\x6f\x75\x6e\x74\x2d\x30"
-                ct0 =
-                    "\xab\x1a\x13\xc9\xd4\xf0\x1a\x87\xec\x34\x40\xdb\xd7\x56\xe2\x67\x7b\xd2\xec\xf9\xdf\x0c\xe7\xed\x73\x86\x9b\x98\xe0\x0c\x09\xbe\x11\x1c\xb9\xfd\xf0\x77\x34\x7a\xeb\x88\xe6\x1b\xdf"
-            ct0' <- seal ctxS aad0 pt
-            ct0' `shouldBe` ct0
-            pt0 <- open ctxR aad0 ct0
-            pt0 `shouldBe` pt
-            let aad1 = "\x43\x6f\x75\x6e\x74\x2d\x31"
-                ct1 =
-                    "\x32\x65\xc7\x80\x7f\xff\xf7\xfd\xac\xe2\x16\x59\xa2\xc6\xcc\xff\xee\x52\xa2\x6d\x27\x0c\x76\x46\x8e\xd7\x42\x02\xa6\x54\x78\xbf\xae\xdf\xff\x9c\x2b\x76\x34\xe2\x4f\x10\xb7\x10\x16"
-            ct1' <- seal ctxS aad1 pt
-            ct1' `shouldBe` ct1
-            pt1 <- open ctxR aad1 ct1
-            pt1 `shouldBe` pt
-
-            exportS ctxS "" 32
-                `shouldBe` "\x07\x0c\xff\xaf\xd8\x9b\x67\xb7\xf0\xee\xb8\x00\x23\x53\x03\xa2\x23\xe6\xff\x9d\x1e\x77\x4d\xce\x8e\xac\x58\x5c\x86\x88\xc8\x72"
-            exportR ctxR "" 32
-                `shouldBe` "\x07\x0c\xff\xaf\xd8\x9b\x67\xb7\xf0\xee\xb8\x00\x23\x53\x03\xa2\x23\xe6\xff\x9d\x1e\x77\x4d\xce\x8e\xac\x58\x5c\x86\x88\xc8\x72"
-
-            exportS ctxS "\x00" 32
-                `shouldBe` "\x28\x52\xe7\x28\x56\x8d\x40\xdd\xb0\xed\xde\x28\x4d\x36\xa4\x35\x9c\x56\x55\x8b\xb2\xfb\x88\x37\xcd\x3d\x92\xe4\x6a\x3a\x14\xa8"
-            exportS ctxS "\x54\x65\x73\x74\x43\x6f\x6e\x74\x65\x78\x74" 32
-                `shouldBe` "\x1d\xf3\x9d\xc5\xdd\x60\xed\xcb\xf5\xf9\xae\x80\x4e\x15\xad\xa6\x6e\x88\x5b\x28\xed\x79\x29\x11\x6f\x76\x83\x69\xa3\xf9\x50\xee"
+            runTest
+                ModeAuth
+                kem_id
+                kdf_id
+                aead_id
+                "4f6465206f6e2061204772656369616e2055726e"
+                "f7674cc8cd7baa5872d1f33dbaffe3314239f6197ddf5ded1746760bfc847e0e"
+                "c94619e1af28971c8fa7957192b7e62a71ca2dcdde0a7cc4a8a9e741d600ab13"
+                "1a478716d63cb2e16786ee93004486dc151e988b34b475043d3e0175bdb01c44"
+                "3ca22a6d1cda1bb9480949ec5329d3bf0b080ca4c45879c95eddb55c70b80b82"
+                "2def0cb58ffcf83d1062dd085c8aceca7f4c0c3fd05912d847b61f3e54121f05"
+                ""
+                ""
+                "ab1a13c9d4f01a87ec3440dbd756e2677bd2ecf9df0ce7ed73869b98e00c09be111cb9fdf077347aeb88e61bdf"
+                "3265c7807ffff7fdace21659a2c6ccffee52a26d270c76468ed74202a65478bfaedfff9c2b7634e24f10b71016"
+                "070cffafd89b67b7f0eeb800235303a223e6ff9d1e774dce8eac585c8688c872"
+                "2852e728568d40ddb0edde284d36a4359c56558bb2fb8837cd3d92e46a3a14a8"
+                "1df39dc5dd60edcbf5f9ae804e15ada66e885b28ed7929116f768369a3f950ee"
 
         it "A.2.4. PSK Setup Information" $ do
-            let info =
-                    "\x4f\x64\x65\x20\x6f\x6e\x20\x61\x20\x47\x72\x65\x63\x69\x61\x6e\x20\x55\x72\x6e"
-                pkEm =
-                    "\x65\x6a\x2e\x00\xdc\x99\x90\xfd\x18\x9e\x6e\x47\x34\x59\x39\x2d\xf5\x56\xe9\xa2\x75\x87\x54\xa0\x9d\xb3\xf5\x11\x79\xa3\xfc\x02"
-                        :: EncodedPublicKey
-                skEm =
-                    "\x5e\x6d\xd7\x3e\x82\xb8\x56\x33\x95\x72\xb7\x24\x5d\x3c\xbb\x07\x3a\x75\x61\xc0\xbe\xe5\x28\x73\x49\x0e\x30\x5c\xbb\x71\x04\x10"
-                        :: EncodedSecretKey
-                pkRm =
-                    "\xa5\x09\x94\x31\xc3\x5c\x49\x1e\xc6\x2c\xa9\x1d\xf1\x52\x5d\x63\x49\xcb\x8a\xa1\x70\xc5\x1f\x95\x81\xf8\x62\x7b\xe6\x33\x48\x51"
-                        :: EncodedPublicKey
-                skRm =
-                    "\x7b\x36\xa4\x28\x22\xe7\x5b\xf3\x36\x2d\xfa\xbb\xe4\x74\xb3\x01\x62\x36\x40\x8b\xec\xb8\x3b\x85\x9a\x69\x09\xe2\x28\x03\xcb\x0c"
-                        :: EncodedSecretKey
-                skSm =
-                    "\x90\x76\x1c\x5b\x0a\x7e\xf0\x98\x5e\xd6\x66\x87\xad\x70\x8b\x92\x1d\x98\x03\xd5\x16\x37\xc8\xd1\xcb\x72\xd0\x3e\xd0\xf6\x44\x18"
-                        :: EncodedSecretKey
-                psk =
-                    "\x02\x47\xfd\x33\xb9\x13\x76\x0f\xa1\xfa\x51\xe1\x89\x2d\x9f\x30\x7f\xbe\x65\xeb\x17\x1e\x81\x32\xc2\xaf\x18\x55\x5a\x73\x8b\x82"
-                psk_id =
-                    "\x45\x6e\x6e\x79\x6e\x20\x44\x75\x72\x69\x6e\x20\x61\x72\x61\x6e\x20\x4d\x6f\x72\x69\x61"
-            (enc, ctxS) <-
-                setupPSKS
-                    DHKEM_X25519_HKDF_SHA256
-                    HKDF_SHA256
-                    ChaCha20Poly1305
-                    (Just skEm)
-                    (Just skSm)
-                    pkRm
-                    info
-                    psk
-                    psk_id
-            ctxR <-
-                setupPSKR
-                    DHKEM_X25519_HKDF_SHA256
-                    HKDF_SHA256
-                    ChaCha20Poly1305
-                    skRm
-                    (Just skSm)
-                    pkEm
-                    info
-                    psk
-                    psk_id
-            enc `shouldBe` pkEm
-            let pt = "Beauty is truth, truth beauty"
-                aad0 = "\x43\x6f\x75\x6e\x74\x2d\x30"
-                ct0 =
-                    "\x9a\xa5\x2e\x29\x27\x4f\xc6\x17\x2e\x38\xa4\x46\x13\x61\xd2\x34\x25\x85\xd3\xae\xec\x67\xfb\x3b\x72\x1e\xcd\x63\xf0\x59\x57\x7c\x7f\xe8\x86\xbe\x0e\xde\x01\x45\x6e\xbc\x67\xd5\x97"
-            ct0' <- seal ctxS aad0 pt
-            ct0' `shouldBe` ct0
-            pt0 <- open ctxR aad0 ct0
-            pt0 `shouldBe` pt
-            let aad1 = "\x43\x6f\x75\x6e\x74\x2d\x31"
-                ct1 =
-                    "\x59\x46\x0b\xac\xdb\xe7\xa9\x20\xef\x28\x06\xa7\x49\x37\xd5\xa6\x91\xd6\xd5\x06\x2d\x7d\xaa\xfc\xad\x7d\xb7\xe4\xd8\xc6\x49\xad\xff\xe5\x75\xc1\x88\x9c\x5c\x2e\x3a\x49\xaf\x8e\x3e"
-            ct1' <- seal ctxS aad1 pt
-            ct1' `shouldBe` ct1
-            pt1 <- open ctxR aad1 ct1
-            pt1 `shouldBe` pt
-
-            exportS ctxS "" 32
-                `shouldBe` "\xc2\x3e\xbd\x4e\x7a\x0a\xd0\x6a\x5d\xdd\xf7\x79\xf6\x50\x04\xce\x94\x81\x06\x9c\xe0\xf0\xe6\xdd\x51\xa0\x45\x39\xdd\xcb\xd5\xcd"
-            exportR ctxR "" 32
-                `shouldBe` "\xc2\x3e\xbd\x4e\x7a\x0a\xd0\x6a\x5d\xdd\xf7\x79\xf6\x50\x04\xce\x94\x81\x06\x9c\xe0\xf0\xe6\xdd\x51\xa0\x45\x39\xdd\xcb\xd5\xcd"
-
-            exportS ctxS "\x00" 32
-                `shouldBe` "\xed\x7f\xf5\xca\x40\xa3\xd8\x45\x61\x06\x7e\xbc\x8e\x01\x70\x2b\xc3\x6c\xf1\xeb\x99\xd4\x2a\x92\x00\x46\x42\xb9\xdf\xaa\xdd\x37"
-            exportS ctxS "\x54\x65\x73\x74\x43\x6f\x6e\x74\x65\x78\x74" 32
-                `shouldBe` "\xd3\xba\xe0\x66\xaa\x8d\xa2\x7d\x52\x7d\x85\xc0\x40\xf7\xdd\x6c\xcb\x60\x22\x1c\x90\x2e\xe3\x6a\x82\xf7\x0b\xcd\x62\xa6\x0e\xe4"
+            runTest
+                ModeAuthPsk
+                kem_id
+                kdf_id
+                aead_id
+                "4f6465206f6e2061204772656369616e2055726e"
+                "656a2e00dc9990fd189e6e473459392df556e9a2758754a09db3f51179a3fc02"
+                "5e6dd73e82b856339572b7245d3cbb073a7561c0bee52873490e305cbb710410"
+                "a5099431c35c491ec62ca91df1525d6349cb8aa170c51f9581f8627be6334851"
+                "7b36a42822e75bf3362dfabbe474b3016236408becb83b859a6909e22803cb0c"
+                "90761c5b0a7ef0985ed66687ad708b921d9803d51637c8d1cb72d03ed0f64418"
+                "0247fd33b913760fa1fa51e1892d9f307fbe65eb171e8132c2af18555a738b82"
+                "456e6e796e20447572696e206172616e204d6f726961"
+                "9aa52e29274fc6172e38a4461361d2342585d3aeec67fb3b721ecd63f059577c7fe886be0ede01456ebc67d597"
+                "59460bacdbe7a920ef2806a74937d5a691d6d5062d7daafcad7db7e4d8c649adffe575c1889c5c2e3a49af8e3e"
+                "c23ebd4e7a0ad06a5dddf779f65004ce9481069ce0f0e6dd51a04539ddcbd5cd"
+                "ed7ff5ca40a3d84561067ebc8e01702bc36cf1eb99d42a92004642b9dfaadd37"
+                "d3bae066aa8da27d527d85c040f7dd6ccb60221c902ee36a82f70bcd62a60ee4"
