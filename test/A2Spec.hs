@@ -32,7 +32,6 @@ spec = do
                     HKDF_SHA256
                     ChaCha20Poly1305
                     skEm
-                    pkEm
                     pkRm
                     info
             ctxR <-
@@ -41,7 +40,6 @@ spec = do
                     HKDF_SHA256
                     ChaCha20Poly1305
                     skRm
-                    pkRm
                     pkEm
                     info
             enc `shouldBe` pkEm
@@ -86,7 +84,6 @@ spec = do
                     HKDF_SHA256
                     ChaCha20Poly1305
                     skEm
-                    pkEm
                     pkRm
                     info
                     psk
@@ -97,7 +94,6 @@ spec = do
                     HKDF_SHA256
                     ChaCha20Poly1305
                     skRm
-                    pkRm
                     pkEm
                     info
                     psk

@@ -26,8 +26,10 @@ encap
     -> Encap
 encap Env{..} enc0@(EncodedPublicKey pkRm) = do
     pkR <- deserializePublicKey envProxy enc0
-    dh <- ecdh' envProxy envSecretKey pkR $ EncapError "encap"
-    let enc@(EncodedPublicKey pkEm) = serializePublicKey envProxy envPublicKey
+    let skE = envSecretKey
+    dh <- ecdh' envProxy skE pkR $ EncapError "encap"
+    let pkE = scalarToPoint envProxy skE
+    let enc@(EncodedPublicKey pkEm) = serializePublicKey envProxy pkE
         kem_context = pkEm <> pkRm
         shared_secret = SharedSecret $ convert $ envDerive dh kem_context
     return (shared_secret, enc)
@@ -46,10 +48,9 @@ encapEnv
     => Proxy group
     -> KeyDeriveFunction
     -> EncodedSecretKey
-    -> EncodedPublicKey
     -> Encap
-encapEnv proxy derive skRm pkRm enc = do
-    env <- newEnvDeserialize proxy derive skRm pkRm
+encapEnv proxy derive skRm enc = do
+    env <- newEnvDeserialize proxy derive skRm
     encap env enc
 
 ----------------------------------------------------------------
@@ -60,8 +61,10 @@ decap
     -> Decap
 decap Env{..} enc@(EncodedPublicKey pkEm) = do
     pkE <- deserializePublicKey envProxy enc
-    dh <- ecdh' envProxy envSecretKey pkE $ DecapError "decap"
-    let EncodedPublicKey pkRm = serializePublicKey envProxy envPublicKey
+    let skR = envSecretKey
+    dh <- ecdh' envProxy skR pkE $ DecapError "decap"
+    let pkR = scalarToPoint envProxy skR
+    let EncodedPublicKey pkRm = serializePublicKey envProxy pkR
         kem_context = pkEm <> pkRm
         shared_secret = SharedSecret $ convert $ envDerive dh kem_context
     return shared_secret
@@ -71,10 +74,9 @@ decapEnv
     => Proxy group
     -> KeyDeriveFunction
     -> EncodedSecretKey
-    -> EncodedPublicKey
     -> Decap
-decapEnv proxy derive skRm pkRm enc = do
-    env <- newEnvDeserialize proxy derive skRm pkRm
+decapEnv proxy derive skRm enc = do
+    env <- newEnvDeserialize proxy derive skRm
     decap env enc
 
 ----------------------------------------------------------------
@@ -82,7 +84,6 @@ decapEnv proxy derive skRm pkRm enc = do
 {- FOURMOLU_DISABLE -}
 data Env group = Env
     { envSecretKey :: SecretKey group
-    , envPublicKey :: PublicKey group
     , envProxy     :: Proxy group
     , envDerive    :: KeyDeriveFunction
     }
@@ -95,12 +96,10 @@ newEnv
      . EllipticCurve group
     => KeyDeriveFunction
     -> SecretKey group
-    -> PublicKey group
     -> Env group
-newEnv derive skR pkR =
+newEnv derive skR =
     Env
         { envSecretKey = skR
-        , envPublicKey = pkR
         , envProxy = proxy
         , envDerive = derive
         }
@@ -114,8 +113,8 @@ genEnv
     => Proxy group -> KeyDeriveFunction -> IO (Env group)
 genEnv proxy derive = do
     gen <- drgNew
-    let (KeyPair pk sk, _) = withDRG gen $ curveGenerateKeyPair proxy
-    return $ newEnv derive sk pk
+    let (KeyPair _ sk, _) = withDRG gen $ curveGenerateKeyPair proxy
+    return $ newEnv derive sk
 
 ----------------------------------------------------------------
 
@@ -124,12 +123,10 @@ newEnvDeserialize
     => Proxy group
     -> KeyDeriveFunction
     -> EncodedSecretKey
-    -> EncodedPublicKey
     -> Either HPKEError (Env group)
-newEnvDeserialize proxy derive skRm pkRm = do
+newEnvDeserialize proxy derive skRm = do
     skR <- deserializeSecretKey proxy skRm
-    pkR <- deserializePublicKey proxy pkRm
-    return $ newEnv derive skR pkR
+    return $ newEnv derive skR
 
 ----------------------------------------------------------------
 

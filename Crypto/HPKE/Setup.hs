@@ -43,12 +43,11 @@ setupBaseS'
     -> KDF_ID
     -> AEAD_ID
     -> EncodedSecretKey -- mine
-    -> EncodedPublicKey -- mine
     -> EncodedPublicKey -- peer
     -> Info
     -> IO (EncodedPublicKey, ContextS)
-setupBaseS' kem_id kdf_id aead_id skEm pkEm pkRm info =
-    setupS' defaultHPKEMap ModeBase kem_id kdf_id aead_id skEm pkEm pkRm info "" ""
+setupBaseS' kem_id kdf_id aead_id skEm pkRm info =
+    setupS' defaultHPKEMap ModeBase kem_id kdf_id aead_id skEm pkRm info "" ""
 
 -- | Setting up base mode for a receiver with its key pair.
 --   This throws 'HPKEError'.
@@ -57,12 +56,11 @@ setupBaseR
     -> KDF_ID
     -> AEAD_ID
     -> EncodedSecretKey -- mine
-    -> EncodedPublicKey -- mine
     -> EncodedPublicKey -- peer
     -> Info
     -> IO ContextR
-setupBaseR kem_id kdf_id aead_id skRm pkRm enc info =
-    setupR defaultHPKEMap ModeBase kem_id kdf_id aead_id skRm pkRm enc info "" ""
+setupBaseR kem_id kdf_id aead_id skRm enc info =
+    setupR defaultHPKEMap ModeBase kem_id kdf_id aead_id skRm enc info "" ""
 
 ----------------------------------------------------------------
 
@@ -86,7 +84,6 @@ setupPSKS'
     -> KDF_ID
     -> AEAD_ID
     -> EncodedSecretKey -- mine
-    -> EncodedPublicKey -- mine
     -> EncodedPublicKey -- peer
     -> Info
     -> PSK
@@ -101,7 +98,6 @@ setupPSKR
     -> KDF_ID
     -> AEAD_ID
     -> EncodedSecretKey -- mine
-    -> EncodedPublicKey -- mine
     -> EncodedPublicKey -- peer
     -> Info
     -> PSK
@@ -144,18 +140,17 @@ setupS'
     -> KDF_ID
     -> AEAD_ID
     -> EncodedSecretKey -- mine
-    -> EncodedPublicKey -- mine
     -> EncodedPublicKey -- peer
     -> Info
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupS' hpkeMap mode kem_id kdf_id aead_id skEm pkEm pkRm info psk psk_id = do
+setupS' hpkeMap mode kem_id kdf_id aead_id skEm pkRm info psk psk_id = do
     verifyPSKInput mode psk psk_id
     let r = look hpkeMap kem_id kdf_id aead_id
     throwOnError r $ \((KEMGroup group, KDFHash h), KDFHash h', AEADCipher c) -> do
         let derive = extractAndExpand h $ suiteKEM kem_id
-            encap = encapEnv group derive skEm pkEm
+            encap = encapEnv group derive skEm
         throwOnError (encap pkRm) $ \(shared_secret, enc) -> do
             let (nk, nn, seal', _) = aeadParams c
                 suite' = suiteHPKE kem_id kdf_id aead_id
@@ -172,18 +167,17 @@ setupR
     -> KDF_ID
     -> AEAD_ID
     -> EncodedSecretKey -- mine
-    -> EncodedPublicKey -- mine
     -> EncodedPublicKey -- peer
     -> Info
     -> PSK
     -> PSK_ID
     -> IO ContextR
-setupR hpkeMap mode kem_id kdf_id aead_id skRm pkRm enc info psk psk_id = do
+setupR hpkeMap mode kem_id kdf_id aead_id skRm enc info psk psk_id = do
     verifyPSKInput mode psk psk_id
     let r = look hpkeMap kem_id kdf_id aead_id
     throwOnError r $ \((KEMGroup group, KDFHash h), KDFHash h', AEADCipher c) -> do
         let derive = extractAndExpand h $ suiteKEM kem_id
-            decap = decapEnv group derive skRm pkRm
+            decap = decapEnv group derive skRm
         throwOnError (decap enc) $ \shared_secret -> do
             let (nk, nn, _, open') = aeadParams c
                 suite' = suiteHPKE kem_id kdf_id aead_id
