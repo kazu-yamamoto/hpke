@@ -33,7 +33,11 @@ setupBaseS
     -> Info
     -> IO (EncodedPublicKey, ContextS)
 setupBaseS kem_id kdf_id aead_id mskEm mskSm pkRm info =
-    setupS defaultHPKEMap ModeBase kem_id kdf_id aead_id mskEm mskSm pkRm info "" ""
+    setupS defaultHPKEMap mode kem_id kdf_id aead_id mskEm mskSm pkRm info "" ""
+  where
+    mode = case mskSm of
+        Nothing -> ModeBase
+        _ -> ModeAuth
 
 -- | Setting up base mode for a receiver with its key pair.
 --   This throws 'HPKEError'.
@@ -47,7 +51,11 @@ setupBaseR
     -> Info
     -> IO ContextR
 setupBaseR kem_id kdf_id aead_id skRm mskSm enc info =
-    setupR defaultHPKEMap ModeBase kem_id kdf_id aead_id skRm mskSm enc info "" ""
+    setupR defaultHPKEMap mode kem_id kdf_id aead_id skRm mskSm enc info "" ""
+  where
+    mode = case mskSm of
+        Nothing -> ModeBase
+        _ -> ModeAuth
 
 ----------------------------------------------------------------
 
@@ -64,7 +72,12 @@ setupPSKS
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupPSKS = setupS defaultHPKEMap ModePsk
+setupPSKS kem_id kdf_id aead_id skRm mskSm =
+    setupS defaultHPKEMap mode kem_id kdf_id aead_id skRm mskSm
+  where
+    mode = case mskSm of
+        Nothing -> ModePsk
+        _ -> ModeAuthPsk
 
 -- | Setting up PSK mode for a receiver with its key pair.
 --   This throws 'HPKEError'.
@@ -79,7 +92,12 @@ setupPSKR
     -> PSK
     -> PSK_ID
     -> IO ContextR
-setupPSKR = setupR defaultHPKEMap ModePsk
+setupPSKR kem_id kdf_id aead_id skRm mskSm =
+    setupR defaultHPKEMap mode kem_id kdf_id aead_id skRm mskSm
+  where
+    mode = case mskSm of
+        Nothing -> ModePsk
+        _ -> ModeAuthPsk
 
 ----------------------------------------------------------------
 
