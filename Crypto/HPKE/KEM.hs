@@ -6,6 +6,7 @@ module Crypto.HPKE.KEM (
     encapGen,
     encapEnv,
     decapEnv,
+    genKeyPairP,
 )
 where
 
@@ -143,9 +144,16 @@ genEnv
     -> Maybe (SecretKey group)
     -> IO (Env group)
 genEnv proxy derive mskS = do
-    gen <- drgNew
-    let (KeyPair _ sk, _) = withDRG gen $ curveGenerateKeyPair proxy
+    (_, sk) <- genKeyPairP proxy
     return $ newEnv derive sk mskS
+
+genKeyPairP
+    :: EllipticCurve curve
+    => proxy curve -> IO (Point curve, Scalar curve)
+genKeyPairP proxy = do
+    gen <- drgNew
+    let (KeyPair pk sk, _) = withDRG gen $ curveGenerateKeyPair proxy
+    return (pk, sk)
 
 ----------------------------------------------------------------
 

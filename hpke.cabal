@@ -21,6 +21,7 @@ library
                       Crypto.HPKE.ID
                       Crypto.HPKE.KDF
                       Crypto.HPKE.KEM
+                      Crypto.HPKE.KeyPair
                       Crypto.HPKE.KeySchedule
                       Crypto.HPKE.PublicKey
                       Crypto.HPKE.Setup
