@@ -42,6 +42,7 @@ module Crypto.HPKE (
 
     -- * Misc
     nEnc,
+    nTag,
 ) where
 
 import Crypto.HPKE.Context
@@ -58,4 +59,13 @@ nEnc DHKEM_P521_HKDF_SHA512   = 133
 nEnc DHKEM_X25519_HKDF_SHA256 =  32
 nEnc DHKEM_X448_HKDF_SHA512   =  56
 nEnc _                        =  0
+{- FOURMOLU_ENABLE -}
+
+-- | Length of AEAD tag.
+{- FOURMOLU_DISABLE -}
+nTag :: AEAD_ID -> Int
+nTag AES_128_GCM      = 16
+nTag AES_256_GCM      = 16
+nTag ChaCha20Poly1305 = 16
+nTag _                =  0
 {- FOURMOLU_ENABLE -}
