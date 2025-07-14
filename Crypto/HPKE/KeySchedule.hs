@@ -9,7 +9,6 @@ module Crypto.HPKE.KeySchedule (
     keySchedule,
 ) where
 
-import Crypto.KDF.HKDF (toPRK)
 import qualified Data.ByteString as BS
 
 import Crypto.HPKE.KDF
@@ -35,8 +34,7 @@ fromMode ModeAuthPsk = 0x03
 ----------------------------------------------------------------
 
 keySchedule
-    :: forall h
-     . (HashAlgorithm h, KDF h)
+    :: HashAlgorithm h
     => h
     -> Suite
     -> Int
@@ -46,21 +44,19 @@ keySchedule
     -> PSK
     -> PSK_ID
     -> SharedSecret
-    -> Either HPKEError (Key, Nonce, Int, PRK h)
+    -> Either HPKEError (Key, Nonce, Int, PRK)
 keySchedule h suite nk nn mode info psk psk_id shared_secret =
-    case toPRK exporter_secret of
-        Nothing -> Left $ KeyScheduleError "cannot convert to PRK"
-        Just prk -> Right (key, base_nonce, 0, prk)
+    Right (key, base_nonce, 0, PRK exporter_secret)
   where
-    psk_id_hash = labeledExtract suite "" "psk_id_hash" psk_id :: PRK h
-    info_hash = labeledExtract suite "" "info_hash" info :: PRK h
+    PRK psk_id_hash = labeledExtract h suite "" "psk_id_hash" psk_id
+    PRK info_hash = labeledExtract h suite "" "info_hash" info
     key_schedule_context =
-        BS.singleton (fromMode mode) <> convert psk_id_hash <> convert info_hash
+        BS.singleton (fromMode mode) <> psk_id_hash <> info_hash
             :: ByteString
 
-    secret = labeledExtract suite (convert shared_secret) "secret" psk :: PRK h
+    secret = labeledExtract h suite (convert shared_secret) "secret" psk
 
-    key = labeledExpand suite secret "key" key_schedule_context nk
-    base_nonce = labeledExpand suite secret "base_nonce" key_schedule_context nn
+    key = labeledExpand h suite secret "key" key_schedule_context nk
+    base_nonce = labeledExpand h suite secret "base_nonce" key_schedule_context nn
 
-    exporter_secret = labeledExpand suite secret "exp" key_schedule_context $ hashDigestSize h
+    exporter_secret = labeledExpand h suite secret "exp" key_schedule_context $ hashDigestSize h

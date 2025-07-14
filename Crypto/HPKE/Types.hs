@@ -37,10 +37,11 @@ module Crypto.HPKE.Types (
     lookupE,
 ) where
 
+import Ageha.Hash
+import Ageha.KDF.HKDF
 import Control.Exception (Exception)
 import Crypto.ECC (SharedSecret (..))
 import Crypto.Error (CryptoFailable (..))
-import Crypto.Hash.IO (hashDigestSize)
 import Crypto.Number.Serialize (i2ospOf_)
 import Data.ByteArray (convert)
 import Data.ByteString (ByteString)
@@ -77,7 +78,6 @@ instance Exception HPKEError
 type Key = ByteString
 
 type Salt = ByteString
-type IKM = ByteString -- Input Keying Material
 type Suite = ByteString
 type Label = ByteString
 type KeyDeriveFunction = SharedSecret -> ByteString -> Key
@@ -130,9 +130,6 @@ type Encap =
 type Decap = EncodedPublicKey -> Either HPKEError SharedSecret
 
 ----------------------------------------------------------------
-
--- | Information string.
-type Info = ByteString
 
 -- | Pre-shared key.
 type PSK = ByteString

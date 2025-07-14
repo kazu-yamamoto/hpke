@@ -12,7 +12,6 @@ module Crypto.HPKE.Internal (
 
     -- * API
     Aead (..),
-    KDF (..),
 
     -- * Types
     Mode (..),
@@ -32,7 +31,6 @@ module Crypto.HPKE.Internal (
 
 import Crypto.HPKE.AEAD
 import Crypto.HPKE.ID
-import Crypto.HPKE.KDF
 import Crypto.HPKE.KeyPair
 import Crypto.HPKE.KeySchedule
 import Crypto.HPKE.PublicKey

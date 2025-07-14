@@ -103,7 +103,7 @@ instance Show KDF_ID where
     show (KDF_ID n)  = "HKDF_ID 0x" ++ printf "%04x" n
 {- FOURMOLU_ENABLE -}
 
-data KDFHash = forall h. (HashAlgorithm h, KDF h) => KDFHash h
+data KDFHash = forall h. HashAlgorithm h => KDFHash h
 
 defaultKDFMap :: [(KDF_ID, KDFHash)]
 defaultKDFMap =

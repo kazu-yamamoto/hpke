@@ -14,6 +14,7 @@ module Crypto.HPKE.Context (
     exportR,
 ) where
 
+import Ageha.KDF.HKDF
 import qualified Control.Exception as E
 import Data.ByteArray (xor)
 import qualified Data.ByteString as BS
