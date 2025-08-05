@@ -14,7 +14,7 @@ kem_id = DHKEM_P256_HKDF_SHA256
 kdf_id :: KDF_ID
 kdf_id = HKDF_SHA256
 aead_id :: AEAD_ID
-aead_id = ChaCha20Poly1305
+aead_id = ChaCha20_Poly1305
 
 spec :: Spec
 spec = do

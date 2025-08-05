@@ -27,7 +27,7 @@ labeledExtract h suite salt label ikm = hkdfExtract h salt labeled_ikm
     labeled_ikm = "HPKE-v1" <> suite <> label <> ikm
 
 labeledExpand
-    :: HashAlgorithm h => h -> Suite -> PRK -> Label -> Info -> Int -> Key
+    :: HashAlgorithm h => h -> Suite -> PRK -> Label -> Info -> Int -> ByteString
 labeledExpand h suite prk label info len = hkdfExpand h prk labeled_info len
   where
     labeled_info =
@@ -38,7 +38,7 @@ labeledExpand h suite prk label info len = hkdfExpand h prk labeled_info len
 extractAndExpand
     :: HashAlgorithm h
     => h -> Suite -> KeyDeriveFunction
-extractAndExpand h suite dh kem_context = shared_secret
+extractAndExpand h suite dh kem_context = Key shared_secret
   where
     eae_prk = labeledExtract h suite "" "eae_prk" $ convert dh
     siz = hashDigestSize h

@@ -32,10 +32,10 @@ module Crypto.HPKE (
     Info,
     PSK,
     PSK_ID,
-    AAD,
+    AAD (..),
     PlainText,
     CipherText,
-    Key,
+    Key (..),
 
     -- * Error
     HPKEError (..),
@@ -64,8 +64,8 @@ nEnc _                        =  0
 -- | Length of AEAD tag.
 {- FOURMOLU_DISABLE -}
 nTag :: AEAD_ID -> Int
-nTag AES_128_GCM      = 16
-nTag AES_256_GCM      = 16
-nTag ChaCha20Poly1305 = 16
-nTag _                =  0
+nTag AES_128_GCM       = 16
+nTag AES_256_GCM       = 16
+nTag ChaCha20_Poly1305 = 16
+nTag _                 =  0
 {- FOURMOLU_ENABLE -}

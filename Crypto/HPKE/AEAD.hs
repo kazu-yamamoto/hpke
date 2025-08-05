@@ -5,12 +5,7 @@ module Crypto.HPKE.AEAD (
     Aead (..),
 ) where
 
-import Crypto.Cipher.AES (AES128, AES256)
-import qualified Crypto.Cipher.ChaChaPoly1305 as CCP
-import Crypto.Cipher.Types (AEAD (..), AuthTag (..), BlockCipher)
-import qualified Crypto.Cipher.Types as Cipher
-import Data.ByteArray (ByteArray, ByteArrayAccess)
-import qualified Data.ByteString as BS
+import Ageha.Cipher.AEAD
 import Data.Tuple (swap)
 
 import Crypto.HPKE.Types
@@ -22,63 +17,8 @@ import Crypto.HPKE.Types
 ----------------------------------------------------------------
 
 class Aead a where
-    sealA :: Proxy a -> Key -> Seal
-    openA :: Proxy a -> Key -> Open
     nK :: Proxy a -> Int
     nN :: Proxy a -> Int
-    nT :: Proxy a -> Int
-
-mkSealA :: AeadEncrypt -> p -> Key -> Seal
-mkSealA enc _ key nonce aad plain = do
-    (cipher, AuthTag tag) <- enc key nonce aad plain
-    return (cipher <> convert tag)
-
-mkOpenA :: AeadDecrypt -> Int -> p -> Key -> Open
-mkOpenA dec len _ key nonce aad cipher = do
-    (plain, AuthTag tag) <- dec key nonce aad cipher'
-    if tag == convert tag'
-        then Right plain
-        else Left $ OpenError "tag mismatch"
-  where
-    brkpt = BS.length cipher - len
-    (cipher', tag') = BS.splitAt brkpt cipher
-
-----------------------------------------------------------------
-
--- 'forall' is necessary because of 'type'
-type AeadEncrypt =
-    forall k n a t
-     . ( ByteArray k
-       , ByteArrayAccess n
-       , ByteArrayAccess a
-       , ByteArray t
-       )
-    => k -> n -> a -> t -> Either HPKEError (t, AuthTag)
-
-type AeadDecrypt =
-    forall k n a t
-     . ( ByteArray k
-       , ByteArrayAccess n
-       , ByteArrayAccess a
-       , ByteArray t
-       )
-    => k -> n -> a -> t -> Either HPKEError (t, AuthTag)
-
-----------------------------------------------------------------
-
-initAES
-    :: ( ByteArray k
-       , ByteArrayAccess n
-       , BlockCipher c
-       )
-    => k -> n -> Maybe (AEAD c)
-initAES key nonce = case mst of
-    CryptoPassed st -> Just st
-    CryptoFailed _ -> Nothing
-  where
-    mst = do
-        st0 <- Cipher.cipherInit key
-        Cipher.aeadInit Cipher.AEAD_GCM st0 nonce
 
 ----------------------------------------------------------------
 

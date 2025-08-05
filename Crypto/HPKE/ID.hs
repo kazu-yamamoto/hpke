@@ -2,9 +2,9 @@
 {-# LANGUAGE PatternSynonyms #-}
 
 module Crypto.HPKE.ID (
-    AEAD_ID (AES_128_GCM, AES_256_GCM, ChaCha20Poly1305, ..),
-    AEADCipher (..),
+    AEAD_ID (AES_128_GCM, AES_256_GCM, ChaCha20_Poly1305, ..),
     defaultAEADMap,
+    Aead (..),
     --
     KDF_ID (HKDF_SHA256, HKDF_SHA384, HKDF_SHA512, ..),
     KDFHash (..),
@@ -25,8 +25,7 @@ module Crypto.HPKE.ID (
     defaultHPKEMap,
 ) where
 
-import Crypto.Cipher.AES (AES128, AES256)
-import Crypto.Cipher.ChaChaPoly1305 (ChaCha20Poly1305)
+import Ageha.Cipher.AEAD
 import Crypto.ECC (
     Curve_P256R1,
     Curve_P384R1,
@@ -40,7 +39,6 @@ import Data.Proxy (Proxy (..))
 import Data.Word (Word16)
 import Text.Printf (printf)
 
-import Crypto.HPKE.AEAD
 import Crypto.HPKE.KDF
 
 ----------------------------------------------------------------
@@ -49,37 +47,33 @@ import Crypto.HPKE.KDF
 newtype AEAD_ID = AEAD_ID {fromAEAD_ID :: Word16} deriving (Eq)
 
 {- FOURMOLU_DISABLE -}
-pattern AES_128_GCM      :: AEAD_ID
-pattern AES_128_GCM       = AEAD_ID 0x0001
-pattern AES_256_GCM      :: AEAD_ID
-pattern AES_256_GCM       = AEAD_ID 0x0002
-pattern ChaCha20Poly1305 :: AEAD_ID
-pattern ChaCha20Poly1305  = AEAD_ID 0x0003
+pattern AES_128_GCM       :: AEAD_ID
+pattern AES_128_GCM        = AEAD_ID 0x0001
+pattern AES_256_GCM       :: AEAD_ID
+pattern AES_256_GCM        = AEAD_ID 0x0002
+pattern ChaCha20_Poly1305 :: AEAD_ID
+pattern ChaCha20_Poly1305  = AEAD_ID 0x0003
 
 instance Show AEAD_ID where
-    show AES_128_GCM      = "AES_128_GCM"
-    show AES_256_GCM      = "AES_256_GCM"
-    show ChaCha20Poly1305 = "ChaCha20Poly1305"
-    show (AEAD_ID n)      = "AEAD_ID 0x" ++ printf "%04x" n
+    show AES_128_GCM       = "AES_128_GCM"
+    show AES_256_GCM       = "AES_256_GCM"
+    show ChaCha20_Poly1305 = "ChaCha20Poly1305"
+    show (AEAD_ID n)       = "AEAD_ID 0x" ++ printf "%04x" n
 {- FOURMOLU_ENABLE -}
 
-{- FOURMOLU_DISABLE -}
-aes128 :: Proxy AES128
-aes128  = Proxy :: Proxy AES128
-aes256 :: Proxy AES256
-aes256  = Proxy :: Proxy AES256
-chacha :: Proxy ChaCha20Poly1305
-chacha  = Proxy :: Proxy ChaCha20Poly1305
-{- FOURMOLU_ENABLE -}
-
-data AEADCipher = forall a. Aead a => AEADCipher (Proxy a)
+data Aead = Aead
+    { aeadName :: AEADName
+    , nK :: Int
+    , nN :: Int
+    }
+    deriving (Eq, Show)
 
 {- FOURMOLU_DISABLE -}
-defaultAEADMap :: [(AEAD_ID, AEADCipher)]
+defaultAEADMap :: [(AEAD_ID, Aead)]
 defaultAEADMap =
-    [ (AES_128_GCM,      AEADCipher aes128)
-    , (AES_256_GCM,      AEADCipher aes256)
-    , (ChaCha20Poly1305, AEADCipher chacha)
+    [ (AES_128_GCM,       Aead AES128GCM        16 12)
+    , (AES_256_GCM,       Aead AES256GCM        32 12)
+    , (ChaCha20_Poly1305, Aead ChaCha20Poly1305 32 12)
     ]
 {- FOURMOLU_ENABLE -}
 
@@ -171,7 +165,7 @@ defaultKEMMap =
 data HPKEMap = HPKEMap
     { kemMap :: [(KEM_ID, (KEMGroup, KDFHash))]
     , kdfMap :: [(KDF_ID, KDFHash)]
-    , cipherMap :: [(AEAD_ID, AEADCipher)]
+    , cipherMap :: [(AEAD_ID, Aead)]
     }
 
 defaultHPKEMap :: HPKEMap

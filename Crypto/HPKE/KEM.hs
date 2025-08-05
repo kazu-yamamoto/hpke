@@ -41,7 +41,7 @@ encap Env{..} enc0@(EncodedPublicKey pkRm) = do
     let pkE = scalarToPoint envProxy skE
     let enc@(EncodedPublicKey pkEm) = serializePublicKey envProxy pkE
         kem_context = pkEm <> pkRm <> pkSm
-        shared_secret = SharedSecret $ convert $ envDerive dh kem_context
+        shared_secret = SharedSecret $ convert $ getKey $ envDerive dh kem_context
     return (shared_secret, enc)
 
 encapGen
@@ -91,7 +91,7 @@ decap Env{..} enc@(EncodedPublicKey pkEm) = do
     let pkR = scalarToPoint envProxy skR
     let EncodedPublicKey pkRm = serializePublicKey envProxy pkR
         kem_context = pkEm <> pkRm <> pkSm
-        shared_secret = SharedSecret $ convert $ envDerive dh kem_context
+        shared_secret = SharedSecret $ convert $ getKey $ envDerive dh kem_context
     return shared_secret
 
 decapEnv

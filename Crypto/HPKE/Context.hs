@@ -14,8 +14,8 @@ module Crypto.HPKE.Context (
     exportR,
 ) where
 
+import Ageha.Cipher.AEAD
 import Ageha.KDF.HKDF
-import qualified Control.Exception as E
 import Data.ByteArray (xor)
 import qualified Data.ByteString as BS
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
@@ -29,7 +29,7 @@ data ContextS = ContextS
     { seqRefS :: IORef Integer
     , sealS :: Seal
     , nonceBaseS :: Nonce
-    , expandS :: Info -> Int -> Key
+    , expandS :: Info -> Int -> ByteString
     }
 
 -- | Context for receivers.
@@ -37,7 +37,7 @@ data ContextR = ContextR
     { seqRefR :: IORef Integer
     , openR :: Open
     , nonceBaseR :: Nonce
-    , expandR :: Info -> Int -> Key
+    , expandR :: Info -> Int -> ByteString
     }
 
 ----------------------------------------------------------------
@@ -47,15 +47,13 @@ data ContextR = ContextR
 seal :: ContextS -> AAD -> PlainText -> IO CipherText
 seal ContextS{..} aad pt = do
     seqI <- readIORef seqRefS
-    let len = BS.length nonceBaseS
+    let nonce' = getNonce nonceBaseS
+        len = BS.length nonce'
         seqBS = i2ospOf_ len seqI :: ByteString
-        nonce = seqBS `xor` nonceBaseS
-        ect = sealS nonce aad pt
+        nonce = Nonce (seqBS `xor` nonce')
         seqI' = seqI + 1
     writeIORef seqRefS seqI'
-    case ect of
-        Right ct -> return ct
-        Left err -> E.throwIO err
+    sealS nonce aad pt
 
 -- | Decryption.
 --   This throws 'HPKEError'.
@@ -63,26 +61,24 @@ open
     :: ContextR -> AAD -> CipherText -> IO PlainText
 open ContextR{..} aad ct = do
     seqI <- readIORef seqRefR
-    let len = BS.length nonceBaseR
+    let nonce' = getNonce nonceBaseR
+        len = BS.length $ getNonce nonceBaseR
         seqBS = i2ospOf_ len seqI :: ByteString
-        nonce = seqBS `xor` nonceBaseR
-        ept = openR nonce aad ct
-    case ept of
-        Left err -> E.throwIO err
-        Right pt -> do
-            let seqI' = seqI + 1
-            writeIORef seqRefR seqI'
-            return pt
+        nonce = Nonce (seqBS `xor` nonce')
+    pt <- openR nonce aad ct
+    let seqI' = seqI + 1
+    writeIORef seqRefR seqI'
+    return pt
 
 ----------------------------------------------------------------
 
 -- | Exporting secret.
-exportS :: ContextS -> Info -> Int -> Key
+exportS :: ContextS -> Info -> Int -> ByteString
 exportS ContextS{..} exporter_context len =
     expandS exporter_context len
 
 -- | Exporting secret.
-exportR :: ContextR -> Info -> Int -> Key
+exportR :: ContextR -> Info -> Int -> ByteString
 exportR ContextR{..} exporter_context len =
     expandR exporter_context len
 
@@ -91,15 +87,16 @@ exportR ContextR{..} exporter_context len =
 newContextS
     :: Key
     -> Nonce
-    -> (Key -> Seal)
-    -> (Info -> Int -> Key)
+    -> AEADName
+    -> (Info -> Int -> ByteString)
     -> IO ContextS
-newContextS key nonce_base seal' expand = do
+newContextS key nonce_base an expand = do
     seqref <- newIORef 0
+    enc <- aeadInitEncrypt an key
     return $
         ContextS
             { seqRefS = seqref
-            , sealS = seal' key
+            , sealS = aeadEncrypt enc
             , nonceBaseS = nonce_base
             , expandS = expand
             }
@@ -109,15 +106,16 @@ newContextS key nonce_base seal' expand = do
 newContextR
     :: Key
     -> Nonce
-    -> (Key -> Open)
-    -> (Info -> Int -> Key)
+    -> AEADName
+    -> (Info -> Int -> ByteString)
     -> IO ContextR
-newContextR key nonce_base open' expand = do
+newContextR key nonce_base an expand = do
     seqref <- newIORef 0
+    dec <- aeadInitDecrypt an key
     return $
         ContextR
             { seqRefR = seqref
-            , openR = open' key
+            , openR = aeadDecrypt dec
             , nonceBaseR = nonce_base
             , expandR = expand
             }

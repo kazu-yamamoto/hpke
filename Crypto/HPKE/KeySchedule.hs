@@ -46,7 +46,7 @@ keySchedule
     -> SharedSecret
     -> Either HPKEError (Key, Nonce, Int, PRK)
 keySchedule h suite nk nn mode info psk psk_id shared_secret =
-    Right (key, base_nonce, 0, PRK exporter_secret)
+    Right (Key key, Nonce base_nonce, 0, PRK exporter_secret)
   where
     PRK psk_id_hash = labeledExtract h suite "" "psk_id_hash" psk_id
     PRK info_hash = labeledExtract h suite "" "info_hash" info

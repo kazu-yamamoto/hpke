@@ -24,9 +24,9 @@ runTest
     -> PSK_ID
     -> CipherText
     -> CipherText
-    -> Key
-    -> Key
-    -> Key
+    -> ByteString -- Key
+    -> ByteString -- Key
+    -> ByteString -- Key
     -> IO ()
 runTest mode kem_id kdf_id aead_id _info _pkEm _skEm _pkRm _skRm _skSm _psk _psk_id _ct0 _ct1 _sec0 _sec1 _sec2 = do
     (enc, ctxS) <-
@@ -87,9 +87,9 @@ runTest mode kem_id kdf_id aead_id _info _pkEm _skEm _pkRm _skRm _skSm _psk _psk
     sec2 = B16.decodeLenient _sec2
 
 aad0 :: AAD
-aad0 = "\x43\x6f\x75\x6e\x74\x2d\x30"
+aad0 = AAD "\x43\x6f\x75\x6e\x74\x2d\x30"
 aad1 :: AAD
-aad1 = "\x43\x6f\x75\x6e\x74\x2d\x31"
+aad1 = AAD "\x43\x6f\x75\x6e\x74\x2d\x31"
 pt :: PlainText
 pt = "Beauty is truth, truth beauty"
 exporter_context0 :: Info

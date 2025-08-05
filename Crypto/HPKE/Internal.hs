@@ -8,7 +8,6 @@ module Crypto.HPKE.Internal (
     -- * Unified types
     KEMGroup (..),
     KDFHash (..),
-    AEADCipher (..),
 
     -- * API
     Aead (..),
@@ -29,7 +28,6 @@ module Crypto.HPKE.Internal (
     genKeyPair,
 ) where
 
-import Crypto.HPKE.AEAD
 import Crypto.HPKE.ID
 import Crypto.HPKE.KeyPair
 import Crypto.HPKE.KeySchedule

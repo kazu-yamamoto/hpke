@@ -5,12 +5,12 @@ module Crypto.HPKE.Types (
     HPKEError (..),
     Salt,
     IKM,
-    Key,
+    Key (..),
     Suite,
     Label,
     KeyDeriveFunction,
-    Nonce,
-    AAD,
+    Nonce (..),
+    AAD (..),
     PlainText,
     CipherText,
     Seal,
@@ -37,6 +37,7 @@ module Crypto.HPKE.Types (
     lookupE,
 ) where
 
+import Ageha.Cipher.AEAD
 import Ageha.Hash
 import Ageha.KDF.HKDF
 import Control.Exception (Exception)
@@ -74,9 +75,6 @@ instance Exception HPKEError
 
 ----------------------------------------------------------------
 
--- | Encryption key.
-type Key = ByteString
-
 type Salt = ByteString
 type Suite = ByteString
 type Label = ByteString
@@ -84,19 +82,14 @@ type KeyDeriveFunction = SharedSecret -> ByteString -> Key
 
 ----------------------------------------------------------------
 
-type Nonce = ByteString
-
--- | Additional authenticated data for AEAD.
-type AAD = ByteString
-
 -- | Plain text.
 type PlainText = ByteString
 
 -- | Cipher text (including a authentication tag)
 type CipherText = ByteString
 
-type Seal = Nonce -> AAD -> PlainText -> Either HPKEError CipherText
-type Open = Nonce -> AAD -> CipherText -> Either HPKEError PlainText
+type Seal = Nonce -> AAD -> PlainText -> IO CipherText
+type Open = Nonce -> AAD -> CipherText -> IO PlainText
 
 ----------------------------------------------------------------
 
