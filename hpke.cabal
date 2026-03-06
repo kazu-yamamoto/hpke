@@ -1,6 +1,6 @@
 cabal-version:      >=1.10
 name:               hpke
-version:            0.0.0
+version:            0.1.0
 license:            BSD3
 license-file:       LICENSE
 maintainer:         kazu@iij.ad.jp
@@ -32,8 +32,8 @@ library
         base >=4.7 && <5,
         base16-bytestring,
         bytestring,
-        crypton >= 1.0.2,
-        memory
+        crypton >= 1.1.0 && <1.2,
+        ram
 
     default-extensions: Strict StrictData
 
