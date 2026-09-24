@@ -66,6 +66,9 @@ data HPKEError
     | DeriveKeyPairError String
     | -- | Original
       KeyScheduleError String
+    | -- | Original.  An export longer than the @255 * Nh@ that RFC 9180
+      -- section 5.3 allows.
+      ExportError String
     | Unsupported String
     deriving (Eq, Show)
 

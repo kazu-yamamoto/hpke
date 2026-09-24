@@ -28,7 +28,7 @@ data ContextS = ContextS
     { seqRefS :: IORef Integer
     , sealS :: Seal
     , nonceBaseS :: Nonce
-    , expandS :: Info -> Int -> Key
+    , expandS :: Info -> Int -> Either HPKEError Key
     }
 
 -- | Context for receivers.
@@ -36,7 +36,7 @@ data ContextR = ContextR
     { seqRefR :: IORef Integer
     , openR :: Open
     , nonceBaseR :: Nonce
-    , expandR :: Info -> Int -> Key
+    , expandR :: Info -> Int -> Either HPKEError Key
     }
 
 ----------------------------------------------------------------
@@ -76,12 +76,18 @@ open ContextR{..} aad ct = do
 ----------------------------------------------------------------
 
 -- | Exporting secret.
-exportS :: ContextS -> Info -> Int -> Key
+--
+-- RFC 9180 section 5.3 allows a length of at most @255 * Nh@, where @Nh@ is
+-- the output of the KDF's hash; a longer one is 'Left' 'ExportError'.
+exportS :: ContextS -> Info -> Int -> Either HPKEError Key
 exportS ContextS{..} exporter_context len =
     expandS exporter_context len
 
 -- | Exporting secret.
-exportR :: ContextR -> Info -> Int -> Key
+--
+-- RFC 9180 section 5.3 allows a length of at most @255 * Nh@, where @Nh@ is
+-- the output of the KDF's hash; a longer one is 'Left' 'ExportError'.
+exportR :: ContextR -> Info -> Int -> Either HPKEError Key
 exportR ContextR{..} exporter_context len =
     expandR exporter_context len
 
@@ -91,7 +97,7 @@ newContextS
     :: Key
     -> Nonce
     -> (Key -> Seal)
-    -> (Info -> Int -> Key)
+    -> (Info -> Int -> Either HPKEError Key)
     -> IO ContextS
 newContextS key nonce_base seal' expand = do
     seqref <- newIORef 0
@@ -109,7 +115,7 @@ newContextR
     :: Key
     -> Nonce
     -> (Key -> Open)
-    -> (Info -> Int -> Key)
+    -> (Info -> Int -> Either HPKEError Key)
     -> IO ContextR
 newContextR key nonce_base open' expand = do
     seqref <- newIORef 0

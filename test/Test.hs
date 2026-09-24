@@ -65,10 +65,19 @@ runTest mode kem_id kdf_id aead_id _info _pkEm _skEm _pkRm _skRm _skSm _psk _psk
     pt1 <- open ctxR aad1 ct1
     pt1 `shouldBe` pt
 
-    exportS ctxS exporter_context0 32 `shouldBe` sec0
-    exportR ctxR exporter_context0 32 `shouldBe` sec0
-    exportS ctxS exporter_context1 32 `shouldBe` sec1
-    exportS ctxS exporter_context2 32 `shouldBe` sec2
+    exportS ctxS exporter_context0 32 `shouldBe` Right sec0
+    exportR ctxR exporter_context0 32 `shouldBe` Right sec0
+    exportS ctxS exporter_context1 32 `shouldBe` Right sec1
+    exportS ctxS exporter_context2 32 `shouldBe` Right sec2
+
+    -- RFC 9180 section 5.3 allows at most 255*Nh octets, which is 16320
+    -- even for SHA-512, the widest hash here
+    case exportS ctxS exporter_context0 20000 of
+        Left (ExportError _) -> return ()
+        r -> expectationFailure $ "an over-long export was not refused: " ++ show (fmap (const ()) r)
+    case exportR ctxR exporter_context0 20000 of
+        Left (ExportError _) -> return ()
+        r -> expectationFailure $ "an over-long export was not refused: " ++ show (fmap (const ()) r)
   where
     info = B16.decodeLenient _info
     pkEm = EncodedPublicKey $ B16.decodeLenient _pkEm
