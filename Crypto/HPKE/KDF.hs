@@ -12,6 +12,7 @@ module Crypto.HPKE.KDF (
 )
 where
 
+import Crypto.Hash.IO (hashDigestSize)
 import Crypto.Hash.Algorithms (
     HashAlgorithm,
     SHA256 (..),
@@ -27,7 +28,13 @@ import Crypto.HPKE.Types
 
 class KDF h where
     labeledExtract :: Suite -> Salt -> Label -> IKM -> PRK h
-    labeledExpand :: Suite -> PRK h -> Label -> Info -> Int -> Key
+
+    -- | RFC 9180 section 5.3 allows an output of at most @255 * Nh@ octets,
+    -- which is also what HKDF's counter can reach.  A longer one is refused
+    -- here rather than left to the HKDF underneath, whose way of saying so
+    -- is an exception.
+    labeledExpand
+        :: Suite -> PRK h -> Label -> Info -> Int -> Either HPKEError Key
 
 instance KDF SHA256 where
     labeledExtract = labeledExtract_
@@ -50,9 +57,20 @@ labeledExtract_ suite salt label ikm = HKDF.extract salt labeled_ikm
     labeled_ikm = "HPKE-v1" <> suite <> label <> ikm
 
 labeledExpand_
-    :: HashAlgorithm a => Suite -> PRK a -> Label -> Info -> Int -> Key
-labeledExpand_ suite prk label info len = HKDF.expand prk labeled_info len
+    :: forall a
+     . HashAlgorithm a
+    => Suite -> PRK a -> Label -> Info -> Int -> Either HPKEError Key
+labeledExpand_ suite prk label info len
+    | len < 0 || len > maxLen =
+        Left $
+            ExportError $
+                "length "
+                    ++ show len
+                    ++ " is outside 0 .. "
+                    ++ show maxLen
+    | otherwise = Right $ HKDF.expand prk labeled_info len
   where
+    maxLen = 255 * hashDigestSize (undefined :: a)
     labeled_info =
         i2ospOf_ 2 (fromIntegral len) <> "HPKE-v1" <> suite <> label <> info
 
@@ -67,5 +85,7 @@ extractAndExpand h suite dh kem_context = shared_secret
     eae_prk :: PRK h
     eae_prk = labeledExtract suite "" "eae_prk" $ convert dh
     siz = hashDigestSize h
+    -- the hash's own digest size, so the length is in range by construction
     shared_secret =
-        labeledExpand suite eae_prk "shared_secret" kem_context siz
+        either (const "") id $
+            labeledExpand suite eae_prk "shared_secret" kem_context siz
