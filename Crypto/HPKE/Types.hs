@@ -38,6 +38,7 @@ module Crypto.HPKE.Types (
 ) where
 
 import Control.Exception (Exception)
+import Crypto.Debug (DebugShow (..))
 import Crypto.ECC (SharedSecret (..))
 import Crypto.Error (CryptoFailable (..))
 import Crypto.Hash.IO (hashDigestSize)
@@ -112,8 +113,12 @@ newtype EncodedSecretKey = EncodedSecretKey ByteString deriving (Eq)
 instance Show EncodedPublicKey where
     show (EncodedPublicKey pk) = showBS16 pk
 
+-- | The key material is not shown.  Use 'Crypto.Debug.debugShow' to see it.
 instance Show EncodedSecretKey where
-    show (EncodedSecretKey pk) = showBS16 pk
+    show _ = "<secret>"
+
+instance DebugShow EncodedSecretKey where
+    debugShow (EncodedSecretKey sk) = showBS16 sk
 
 instance IsString EncodedPublicKey where
     fromString = EncodedPublicKey . fromString
