@@ -1,5 +1,16 @@
 # ChangeLog for hpke
 
+## 0.2.1
+
+* `Show EncodedSecretKey` no longer prints the key.  `Show` is what `print`,
+  a message built with `error`, an exception and a test framework's failure
+  output all reach for, so it is the instance a key travels on when nobody
+  meant to send it anywhere; it now renders `<secret>`, and
+  `Crypto.Debug.debugShow` returns the hexadecimal it used to.
+  `EncodedPublicKey` is unchanged.
+  [#2](https://github.com/kazu-yamamoto/hpke/pull/2)
+* The lower bound on crypton moves to 2.0, which is where `Crypto.Debug` is.
+
 ## 0.2.0
 
 * Breaking change: `exportS` and `exportR` return `Either HPKEError Key`
