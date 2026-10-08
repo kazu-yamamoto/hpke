@@ -12,7 +12,6 @@ module Crypto.HPKE.KDF (
 )
 where
 
-import Crypto.Hash.IO (hashDigestSize)
 import Crypto.Hash.Algorithms (
     HashAlgorithm,
     SHA256 (..),

@@ -1,5 +1,21 @@
 # ChangeLog for hpke
 
+## 0.3.0
+
+* A receiver authenticates a sender by its **public** key.  `setupBaseR`,
+  `setupPSKR` and `setupR` took the sender's secret key for the
+  authenticated modes and derived the public one from it; RFC 9180 section
+  4.1 is `AuthDecap(enc, skR, pkS)`, and a receiver has only the public one.
+  As it stood, `mode_auth` and `mode_auth_psk` could not be used by a real
+  receiver.  **Breaking**: those three now take a `Maybe EncodedPublicKey`.
+* DHKEM is an instance of crypton's `Crypto.KEM.KEM`, in the new
+  `Crypto.HPKE.DHKEM`, with one type per suite RFC 9180 registers.
+  `setupS` and `setupR` go through the class rather than reaching for the
+  group directly.
+* `toPublicKey` gives the public key that goes with a secret key, for the
+  `KEM_ID` named.
+* The lower bound on crypton moves to 2.1.8, which is where `Crypto.KEM` is.
+
 ## 0.2.1
 
 * `Show EncodedSecretKey` no longer prints the key.  `Show` is what `print`,
