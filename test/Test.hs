@@ -50,7 +50,7 @@ runTest mode kem_id kdf_id aead_id _info _pkEm _skEm _pkRm _skRm _skSm _psk _psk
             kdf_id
             aead_id
             skRm
-            mskSm -- auth
+            mpkSm -- auth: the sender's public key, which is all a receiver has
             pkEm
             info
             psk
@@ -87,6 +87,10 @@ runTest mode kem_id kdf_id aead_id _info _pkEm _skEm _pkRm _skRm _skSm _psk _psk
     mskSm
         | _skSm == "" = Nothing
         | otherwise = Just $ EncodedSecretKey $ B16.decodeLenient _skSm
+    -- The vectors give the sender's secret key; a receiver is given the
+    -- public one.  Deriving it here is sound because the same derivation is
+    -- pinned by "enc `shouldBe` pkEm" above, for every suite tested.
+    mpkSm = either (error . show) id . toPublicKey defaultHPKEMap kem_id <$> mskSm
     psk = B16.decodeLenient _psk
     psk_id = B16.decodeLenient _psk_id
     ct0 = B16.decodeLenient _ct0

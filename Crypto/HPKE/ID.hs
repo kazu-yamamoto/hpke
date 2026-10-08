@@ -1,4 +1,5 @@
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 
 module Crypto.HPKE.ID (
@@ -18,30 +19,15 @@ module Crypto.HPKE.ID (
         DHKEM_X448_HKDF_SHA512,
         ..
     ),
-    defaultKEMMap,
-    KEMGroup (..),
-    --
-    HPKEMap (..),
-    defaultHPKEMap,
+    suiteKEM,
 ) where
 
 import Crypto.Cipher.AES (AES128, AES256)
 import Crypto.Cipher.ChaChaPoly1305 (ChaCha20Poly1305)
-import Crypto.ECC (
-    Curve_P256R1,
-    Curve_P384R1,
-    Curve_P521R1,
-    Curve_X25519,
-    Curve_X448,
-    EllipticCurve (..),
-    EllipticCurveDH (..),
- )
-import Data.Proxy (Proxy (..))
-import Data.Word (Word16)
-import Text.Printf (printf)
 
 import Crypto.HPKE.AEAD
 import Crypto.HPKE.KDF
+import Crypto.HPKE.Types
 
 ----------------------------------------------------------------
 
@@ -141,43 +127,10 @@ instance Show KEM_ID where
 
 ----------------------------------------------------------------
 
-{- FOURMOLU_DISABLE -}
-p256   :: Proxy Curve_P256R1
-p256    = Proxy :: Proxy Curve_P256R1
-p384   :: Proxy Curve_P384R1
-p384    = Proxy :: Proxy Curve_P384R1
-p521   :: Proxy Curve_P521R1
-p521    = Proxy :: Proxy Curve_P521R1
-x25519 :: Proxy Curve_X25519
-x25519  = Proxy :: Proxy Curve_X25519
-x448   :: Proxy Curve_X448
-x448    = Proxy :: Proxy Curve_X448
-
-data KEMGroup
-    = forall c. (EllipticCurve c, EllipticCurveDH c) => KEMGroup (Proxy c)
-
-defaultKEMMap :: [(KEM_ID, (KEMGroup, KDFHash))]
-defaultKEMMap =
-    [ (DHKEM_P256_HKDF_SHA256,   (KEMGroup p256,   KDFHash SHA256))
-    , (DHKEM_P384_HKDF_SHA384,   (KEMGroup p384,   KDFHash SHA384))
-    , (DHKEM_P521_HKDF_SHA512,   (KEMGroup p521,   KDFHash SHA512))
-    , (DHKEM_X25519_HKDF_SHA256, (KEMGroup x25519, KDFHash SHA256))
-    , (DHKEM_X448_HKDF_SHA512,   (KEMGroup x448,   KDFHash SHA512))
-    ]
-{- FOURMOLU_ENABLE -}
-
-----------------------------------------------------------------
-
-data HPKEMap = HPKEMap
-    { kemMap :: [(KEM_ID, (KEMGroup, KDFHash))]
-    , kdfMap :: [(KDF_ID, KDFHash)]
-    , cipherMap :: [(AEAD_ID, AEADCipher)]
-    }
-
-defaultHPKEMap :: HPKEMap
-defaultHPKEMap =
-    HPKEMap
-        { kemMap = defaultKEMMap
-        , kdfMap = defaultKDFMap
-        , cipherMap = defaultAEADMap
-        }
+-- | The @suite_id@ of RFC 9180 section 4.1, which goes into every label the
+-- KEM derives under.  This is what ties a DHKEM to its registered code
+-- point rather than to its group and hash alone.
+suiteKEM :: KEM_ID -> Suite
+suiteKEM kem_id = "KEM" <> i
+  where
+    i = i2ospOf_ 2 $ fromIntegral $ fromKEM_ID kem_id
