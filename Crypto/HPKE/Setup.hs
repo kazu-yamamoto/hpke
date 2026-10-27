@@ -34,7 +34,7 @@ setupBaseS
     -- ^ My ephemeral secret key. Automatically generated if 'Nothing'
     -> Maybe EncodedSecretKey
     -- ^ My secret key for authentication.
-    --   'mode_base' is used if 'Nothing'. 'base_auth' is used, otherwise.
+    --   @mode_base@ is used if 'Nothing'. @mode_auth@ is used, otherwise.
     -> EncodedPublicKey
     -- ^ Peer's public key.
     -> Info
@@ -56,7 +56,7 @@ setupBaseR
     -- ^ My secret key
     -> Maybe EncodedPublicKey
     -- ^ The sender's public key, for authentication.
-    --   'mode_base' is used if 'Nothing'. 'mode_auth' is used, otherwise.
+    --   @mode_base@ is used if 'Nothing'. @mode_auth@ is used, otherwise.
     -> EncodedPublicKey
     -- ^ The encapsulated key, @enc@.
     -> Info
@@ -80,15 +80,15 @@ setupPSKS
     -- ^ My ephemeral secret key. Automatically generated if 'Nothing'
     -> Maybe EncodedSecretKey
     -- ^ My secret key for authentication.
-    --   'mode_base' is used if 'Nothing'. 'base_auth' is used, otherwise.
+    --   @mode_psk@ is used if 'Nothing'. @mode_auth_psk@ is used, otherwise.
     -> EncodedPublicKey
     -- ^ Peer's public key.
     -> Info
     -> PSK
     -> PSK_ID
     -> IO (EncodedPublicKey, ContextS)
-setupPSKS kem_id kdf_id aead_id skRm mskSm =
-    setupS defaultHPKEMap mode kem_id kdf_id aead_id skRm mskSm
+setupPSKS kem_id kdf_id aead_id mskEm mskSm =
+    setupS defaultHPKEMap mode kem_id kdf_id aead_id mskEm mskSm
   where
     mode = case mskSm of
         Nothing -> ModePsk
@@ -104,7 +104,7 @@ setupPSKR
     -- ^ My secret key
     -> Maybe EncodedPublicKey
     -- ^ The sender's public key, for authentication.
-    --   'mode_psk' is used if 'Nothing'. 'mode_auth_psk' is used, otherwise.
+    --   @mode_psk@ is used if 'Nothing'. @mode_auth_psk@ is used, otherwise.
     -> EncodedPublicKey
     -- ^ The encapsulated key, @enc@.
     -> Info
@@ -129,8 +129,7 @@ setupS
     -> Maybe EncodedSecretKey
     -- ^ My ephemeral secret key. Automatically generated if 'Nothing'
     -> Maybe EncodedSecretKey
-    -- ^ My secret key for authentication.
-    --   'mode_base' is used if 'Nothing'. 'base_auth' is used, otherwise.
+    -- ^ My secret key, for the authenticated modes.
     -> EncodedPublicKey
     -- ^ Peer's public key.
     -> Info
