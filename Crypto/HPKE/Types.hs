@@ -22,7 +22,6 @@ module Crypto.HPKE.Types (
     PSK_ID,
     Encap,
     Decap,
-    ExporterSecret,
     -- rexport
     CryptoFailable (..),
     SharedSecret (..),
@@ -154,7 +153,3 @@ lookupE :: (Eq k, Show k) => k -> [(k, v)] -> Either HPKEError v
 lookupE k table = case lookup k table of
     Nothing -> Left $ Unsupported $ show k
     Just v -> Right v
-
-----------------------------------------------------------------
-
-type ExporterSecret = ByteString

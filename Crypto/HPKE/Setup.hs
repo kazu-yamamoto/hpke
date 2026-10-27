@@ -145,7 +145,7 @@ setupS hpkeMap mode kem_id kdf_id aead_id mskEm mskSm pkRm info psk psk_id = do
             let (nk, nn, seal', _) = aeadParams c
                 suite' = suiteHPKE kem_id kdf_id aead_id
                 keys = keySchedule h' suite' nk nn mode info psk psk_id shared_secret
-            throwOnError keys $ \(key, nonce, _, prk) -> do
+            throwOnError keys $ \(key, nonce, prk) -> do
                 let expand' = labeledExpand suite' prk "sec"
                 ctx <- newContextS key nonce seal' expand'
                 return (enc, ctx)
@@ -174,7 +174,7 @@ setupR hpkeMap mode kem_id kdf_id aead_id skRm mpkSm enc info psk psk_id = do
             let (nk, nn, _, open') = aeadParams c
                 suite' = suiteHPKE kem_id kdf_id aead_id
                 keys = keySchedule h' suite' nk nn mode info psk psk_id shared_secret
-            throwOnError keys $ \(key, nonce, _, prk) -> do
+            throwOnError keys $ \(key, nonce, prk) -> do
                 let expand' = labeledExpand suite' prk "sec"
                 newContextR key nonce open' expand'
 

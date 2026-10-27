@@ -86,5 +86,5 @@ extractAndExpand h suite dh kem_context = shared_secret
     siz = hashDigestSize h
     -- the hash's own digest size, so the length is in range by construction
     shared_secret =
-        either (const "") id $
+        either (error . show) id $
             labeledExpand suite eae_prk "shared_secret" kem_context siz

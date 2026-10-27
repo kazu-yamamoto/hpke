@@ -46,7 +46,7 @@ keySchedule
     -> PSK
     -> PSK_ID
     -> SharedSecret
-    -> Either HPKEError (Key, Nonce, Int, PRK h)
+    -> Either HPKEError (Key, Nonce, PRK h)
 keySchedule h suite nk nn mode info psk psk_id shared_secret = do
     key <- labeledExpand suite secret "key" key_schedule_context nk
     base_nonce <- labeledExpand suite secret "base_nonce" key_schedule_context nn
@@ -54,7 +54,7 @@ keySchedule h suite nk nn mode info psk psk_id shared_secret = do
         labeledExpand suite secret "exp" key_schedule_context $ hashDigestSize h
     case toPRK exporter_secret of
         Nothing -> Left $ KeyScheduleError "cannot convert to PRK"
-        Just prk -> Right (key, base_nonce, 0, prk)
+        Just prk -> Right (key, base_nonce, prk)
   where
     psk_id_hash = labeledExtract suite "" "psk_id_hash" psk_id :: PRK h
     info_hash = labeledExtract suite "" "info_hash" info :: PRK h
@@ -63,5 +63,3 @@ keySchedule h suite nk nn mode info psk psk_id shared_secret = do
             :: ByteString
 
     secret = labeledExtract suite (convert shared_secret) "secret" psk :: PRK h
-
-
