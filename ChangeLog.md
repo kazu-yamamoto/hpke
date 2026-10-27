@@ -1,6 +1,6 @@
 # ChangeLog for hpke
 
-## Unreleased
+## 0.4.0
 
 * **Breaking**: `nEnc` and `nTag` return `Maybe Int`, with `Nothing` for an
   identifier they do not know, rather than `0`.

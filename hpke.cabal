@@ -1,6 +1,6 @@
 cabal-version:      >=1.10
 name:               hpke
-version:            0.3.0
+version:            0.4.0
 license:            BSD3
 license-file:       LICENSE
 maintainer:         kazu@iij.ad.jp
