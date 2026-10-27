@@ -86,7 +86,7 @@ instance Show KDF_ID where
     show HKDF_SHA256 = "HKDF_SHA256"
     show HKDF_SHA384 = "HKDF_SHA384"
     show HKDF_SHA512 = "HKDF_SHA512"
-    show (KDF_ID n)  = "HKDF_ID 0x" ++ printf "%04x" n
+    show (KDF_ID n)  = "KDF_ID 0x" ++ printf "%04x" n
 {- FOURMOLU_ENABLE -}
 
 data KDFHash = forall h. (HashAlgorithm h, KDF h) => KDFHash h
@@ -122,7 +122,7 @@ instance Show KEM_ID where
     show DHKEM_P521_HKDF_SHA512   = "DHKEM(P-521, HKDF-SHA512)"
     show DHKEM_X25519_HKDF_SHA256 = "DHKEM(X25519, HKDF-SHA256)"
     show DHKEM_X448_HKDF_SHA512   = "DHKEM(X448, HKDF-SHA512)"
-    show (KEM_ID n)               = "DHKEM_ID 0x" ++ printf "%04x" n
+    show (KEM_ID n)               = "KEM_ID 0x" ++ printf "%04x" n
 {- FOURMOLU_ENABLE -}
 
 ----------------------------------------------------------------
