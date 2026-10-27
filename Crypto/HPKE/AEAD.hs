@@ -35,8 +35,9 @@ mkSealA enc _ key nonce aad plain = do
 
 mkOpenA :: AeadDecrypt -> Int -> p -> Key -> Open
 mkOpenA dec len _ key nonce aad cipher = do
-    (plain, AuthTag tag) <- dec key nonce aad cipher'
-    if tag == convert tag'
+    (plain, tag) <- dec key nonce aad cipher'
+    -- AuthTag's Eq is constant-time
+    if tag == AuthTag (convert tag')
         then Right plain
         else Left $ OpenError "tag mismatch"
   where
@@ -105,7 +106,7 @@ encryptAes128gcm key nonce aad plain = case initAES key nonce of
 
 decryptAes128gcm :: AeadDecrypt
 decryptAes128gcm key nonce aad cipher = case initAES key nonce of
-    Nothing -> Left $ OpenError "decrypttAes128gcm"
+    Nothing -> Left $ OpenError "decryptAes128gcm"
     Just st -> Right $ simpleDecrypt (st :: AEAD AES128) aad cipher aes128tagLength
 
 aes128tagLength :: Int
@@ -170,7 +171,7 @@ decryptChacha20poly1305 :: AeadDecrypt
 decryptChacha20poly1305 key nonce aad cipher =
     case CCP.aeadChacha20poly1305Init key nonce of
         CryptoPassed st -> Right $ simpleDecrypt st aad cipher chacha20poly1305tagLength
-        CryptoFailed _ -> Left $ SealError "decryptChacha20poly1305"
+        CryptoFailed _ -> Left $ OpenError "decryptChacha20poly1305"
 
 chacha20poly1305tagLength :: Int
 chacha20poly1305tagLength = 16

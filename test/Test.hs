@@ -2,7 +2,9 @@
 
 module Test (runTest) where
 
+import Data.Bits (xor)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as B16
 import Test.Hspec
 
@@ -62,6 +64,9 @@ runTest mode kem_id kdf_id aead_id _info _pkEm _skEm _pkRm _skRm _skSm _psk _psk
     pt0 `shouldBe` pt
     ct1' <- seal ctxS aad1 pt
     ct1' `shouldBe` ct1
+    -- a forged tag is refused, and the sequence number does not advance
+    open ctxR aad1 (BS.init ct1 <> BS.singleton (BS.last ct1 `xor` 1))
+        `shouldThrow` isOpenError
     pt1 <- open ctxR aad1 ct1
     pt1 `shouldBe` pt
 
@@ -98,6 +103,10 @@ runTest mode kem_id kdf_id aead_id _info _pkEm _skEm _pkRm _skRm _skSm _psk _psk
     sec0 = B16.decodeLenient _sec0
     sec1 = B16.decodeLenient _sec1
     sec2 = B16.decodeLenient _sec2
+
+isOpenError :: HPKEError -> Bool
+isOpenError (OpenError _) = True
+isOpenError _ = False
 
 aad0 :: AAD
 aad0 = "\x43\x6f\x75\x6e\x74\x2d\x30"
