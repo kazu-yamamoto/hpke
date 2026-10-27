@@ -1,5 +1,10 @@
 # ChangeLog for hpke
 
+## Unreleased
+
+* **Breaking**: `nEnc` and `nTag` return `Maybe Int`, with `Nothing` for an
+  identifier they do not know, rather than `0`.
+
 ## 0.3.0
 
 * A receiver authenticates a sender by its **public** key.  `setupBaseR`,

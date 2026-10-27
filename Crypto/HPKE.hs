@@ -51,21 +51,23 @@ import Crypto.HPKE.Setup
 import Crypto.HPKE.Types
 
 -- | Length of "enc", aka sender's public key.
+--   'Nothing' for a KEM not registered in RFC 9180.
 {- FOURMOLU_DISABLE -}
-nEnc :: KEM_ID -> Int
-nEnc DHKEM_P256_HKDF_SHA256   =  65
-nEnc DHKEM_P384_HKDF_SHA384   =  97
-nEnc DHKEM_P521_HKDF_SHA512   = 133
-nEnc DHKEM_X25519_HKDF_SHA256 =  32
-nEnc DHKEM_X448_HKDF_SHA512   =  56
-nEnc _                        =  0
+nEnc :: KEM_ID -> Maybe Int
+nEnc DHKEM_P256_HKDF_SHA256   = Just  65
+nEnc DHKEM_P384_HKDF_SHA384   = Just  97
+nEnc DHKEM_P521_HKDF_SHA512   = Just 133
+nEnc DHKEM_X25519_HKDF_SHA256 = Just  32
+nEnc DHKEM_X448_HKDF_SHA512   = Just  56
+nEnc _                        = Nothing
 {- FOURMOLU_ENABLE -}
 
 -- | Length of AEAD tag.
+--   'Nothing' for an AEAD not registered in RFC 9180.
 {- FOURMOLU_DISABLE -}
-nTag :: AEAD_ID -> Int
-nTag AES_128_GCM      = 16
-nTag AES_256_GCM      = 16
-nTag ChaCha20Poly1305 = 16
-nTag _                =  0
+nTag :: AEAD_ID -> Maybe Int
+nTag AES_128_GCM      = Just 16
+nTag AES_256_GCM      = Just 16
+nTag ChaCha20Poly1305 = Just 16
+nTag _                = Nothing
 {- FOURMOLU_ENABLE -}
