@@ -4,6 +4,15 @@
 
 * **Breaking**: `nEnc` and `nTag` return `Maybe Int`, with `Nothing` for an
   identifier they do not know, rather than `0`.
+* `seal` is safe to call from several threads: each call takes its own
+  sequence number, so no two share a nonce.  `open` is serialized.
+* `seal` and `open` throw `MessageLimitReachedError` before the sequence
+  number would wrap, as RFC 9180 section 5.2 requires.
+* AEAD tags are compared in constant time.
+* A ChaCha20-Poly1305 decryption failure is an `OpenError`, not a
+  `SealError`.
+* `Show` of an unknown `KDF_ID` or `KEM_ID` uses the type's name.
+* The lower bound on base moves to 4.9.
 
 ## 0.3.0
 
