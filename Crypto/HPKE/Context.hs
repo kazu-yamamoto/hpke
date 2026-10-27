@@ -14,10 +14,11 @@ module Crypto.HPKE.Context (
     exportR,
 ) where
 
+import Control.Concurrent.MVar (MVar, modifyMVar, newMVar)
 import qualified Control.Exception as E
 import Data.ByteArray (xor)
 import qualified Data.ByteString as BS
-import Data.IORef (IORef, newIORef, readIORef, writeIORef)
+import Data.IORef (IORef, atomicModifyIORef', newIORef)
 
 import Crypto.HPKE.Types
 
@@ -33,7 +34,7 @@ data ContextS = ContextS
 
 -- | Context for receivers.
 data ContextR = ContextR
-    { seqRefR :: IORef Integer
+    { seqVarR :: MVar Integer
     , openR :: Open
     , nonceBaseR :: Nonce
     , expandR :: Info -> Int -> Either HPKEError Key
@@ -43,35 +44,35 @@ data ContextR = ContextR
 
 -- | Encryption.
 --   This throws 'HPKEError'.
+--   Safe to call from multiple threads: each call gets its own nonce.
 seal :: ContextS -> AAD -> PlainText -> IO CipherText
 seal ContextS{..} aad pt = do
-    seqI <- readIORef seqRefS
-    let len = BS.length nonceBaseS
-        seqBS = i2ospOf_ len seqI :: ByteString
-        nonce = seqBS `xor` nonceBaseS
-        ect = sealS nonce aad pt
-        seqI' = seqI + 1
-    writeIORef seqRefS seqI'
-    case ect of
-        Right ct -> return ct
-        Left err -> E.throwIO err
+    seqI <- atomicModifyIORef' seqRefS $ \i -> (i + 1, i)
+    checkLimit nonceBaseS seqI
+    either E.throwIO return $ sealS (computeNonce nonceBaseS seqI) aad pt
 
 -- | Decryption.
 --   This throws 'HPKEError'.
+--   The sequence number advances only when decryption succeeds.
 open
     :: ContextR -> AAD -> CipherText -> IO PlainText
-open ContextR{..} aad ct = do
-    seqI <- readIORef seqRefR
-    let len = BS.length nonceBaseR
-        seqBS = i2ospOf_ len seqI :: ByteString
-        nonce = seqBS `xor` nonceBaseR
-        ept = openR nonce aad ct
-    case ept of
+open ContextR{..} aad ct = modifyMVar seqVarR $ \seqI -> do
+    checkLimit nonceBaseR seqI
+    case openR (computeNonce nonceBaseR seqI) aad ct of
         Left err -> E.throwIO err
-        Right pt -> do
-            let seqI' = seqI + 1
-            writeIORef seqRefR seqI'
-            return pt
+        Right pt -> return (seqI + 1, pt)
+
+computeNonce :: Nonce -> Integer -> Nonce
+computeNonce nonce_base seqI = seqBS `xor` nonce_base
+  where
+    seqBS = i2ospOf_ (BS.length nonce_base) seqI :: ByteString
+
+-- RFC 9180 section 5.2: the sequence number must not wrap around.
+checkLimit :: Nonce -> Integer -> IO ()
+checkLimit nonce_base seqI
+    | seqI >= 2 ^ (8 * BS.length nonce_base) - 1 =
+        E.throwIO $ MessageLimitReachedError "sequence number overflow"
+    | otherwise = return ()
 
 ----------------------------------------------------------------
 
@@ -118,10 +119,10 @@ newContextR
     -> (Info -> Int -> Either HPKEError Key)
     -> IO ContextR
 newContextR key nonce_base open' expand = do
-    seqref <- newIORef 0
+    seqvar <- newMVar 0
     return $
         ContextR
-            { seqRefR = seqref
+            { seqVarR = seqvar
             , openR = open' key
             , nonceBaseR = nonce_base
             , expandR = expand
