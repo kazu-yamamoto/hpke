@@ -1,6 +1,9 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Crypto.HPKE.KeyPair where
+module Crypto.HPKE.KeyPair (
+    genKeyPair,
+    toPublicKey,
+) where
 
 import qualified Control.Exception as E
 import Crypto.KEM (generateKeyPair)

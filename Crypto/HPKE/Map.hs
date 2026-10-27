@@ -1,4 +1,3 @@
-
 -- | Which algorithms this package will run, and under which identifiers.
 module Crypto.HPKE.Map (
     HPKEMap (..),
